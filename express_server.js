@@ -39,14 +39,29 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
-  res.render("urls_show", templateVars);
+  if (urlDatabase[req.params.id] === undefined) {
+    res.send('Invalid short url');
+  } else {
+    res.render("urls_show", templateVars);
+  }
 });
 
 app.post("/urls", (req, res) => {
   console.log(req.body); // Log the POST request body to the console
   let shortString = generateRandomString();
   urlDatabase[shortString] = req.body['longURL'];
-  res.redirect(302, `/urls/${shortString}`);
+  res.redirect(302, `/urls/${shortString}`); // Redirects the link
+});
+
+// Redirects to external websites using the longURL
+app.get("/u/:id", (req, res) => {
+  const longURL = urlDatabase[req.params.id];
+  if (longURL === undefined) {
+    res.send('Invalid short url');
+  } else {
+    res.redirect(302, longURL);
+  }
+  
 });
 
 // Generate 6 random alphanumeric characters as a single string
