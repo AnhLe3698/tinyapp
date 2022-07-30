@@ -50,7 +50,21 @@ app.post("/urls", (req, res) => {
 // Generate 6 random alphanumeric characters as a single string
 let generateRandomString = function() {
   let randomNumbers = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 6; i++) {
+    // Generating numbers that will represent
+    //10 digits, 26 lower case and 26 captial letters
     randomNumbers.push(Math.floor(Math.random() * 62));
   }
+  //String.fromCharCode(65)
+  let stringRes = randomNumbers.map((num) => {
+    if (num < 10) {
+      return num;
+    } else if (num > 9 && num < 36) {
+      return String.fromCharCode(num + 55);
+    } else if (num > 35) {
+      return String.fromCharCode(num + 61);
+    }
+  }).join('');
+
+  return stringRes;
 };
