@@ -1,44 +1,43 @@
+// Adding our dependencies
 const express = require('express');
 const fs = require('fs');
+// Starting the server and initializing the PORT
 const app = express();
 const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs");
+// Initialzing Database
 let urlDatabase = {};
 
-/*
-let urlDatabase = {
-  "b2xVn2":"http://www.lighthouselabs.ca",
-  "9sm5xK":"http://www.google.com",
-  "FAen9V":"http://youtube.com"
-}
-*/
-
+// Initialzing Database Part 2
 // We need to read our urls from our Url database saved in a text file
-let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err, data) => {
+let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err) => {
   if (err) {
     console.error(err);
     return;
   }
-  
 });
 let parsedData = JSON.parse(data);
-
 urlDatabase = {...parsedData};
+
+// Initialzing Database part 3
 // For testing purposes we need to add these links every server startup
 urlDatabase["b2xVn2"] = "http://www.lighthouselabs.ca";
 urlDatabase["9sm5xK"] = "http://www.google.com";
 urlDatabase["FAen9V"] = "http://youtube.com";
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
+//Middleware
+app.use(express.urlencoded({ extended: true }));
 
+//Listener
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });
 
-app.use(express.urlencoded({ extended: true }));
+app.get("/", (req, res) => {
+  res.send("Hello!");
+});
+
 
 // Sends urls as a Json object
 app.get("/urls.json", (req, res) => {
