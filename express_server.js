@@ -1,13 +1,23 @@
 const express = require('express');
+const fs = require('fs');
 const app = express();
 const PORT = 8080; // default port 8080
 
 app.set("view engine", "ejs");
+let urlDatabase = {};
 
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};
+// We need to read our urls from our Url database saved in a text file
+let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err, data) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+  
+});
+let parsedData = JSON.parse(data);
+
+urlDatabase = {...parsedData};
+
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -50,6 +60,14 @@ app.post("/urls", (req, res) => {
   console.log(req.body); // Log the POST request body to the console
   let shortString = generateRandomString();
   urlDatabase[shortString] = req.body['longURL'];
+  let urlDatabaseJSON = JSON.stringify(urlDatabase);
+  // Saving the new urlDatabase object into the text file
+  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
+    if (err) {
+      console.error(err);
+    }
+    // file written successfully
+  });
   res.redirect(302, `/urls/${shortString}`); // Redirects the link
 });
 
