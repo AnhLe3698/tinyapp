@@ -6,6 +6,14 @@ const PORT = 8080; // default port 8080
 app.set("view engine", "ejs");
 let urlDatabase = {};
 
+/*
+let urlDatabase = {
+  "b2xVn2":"http://www.lighthouselabs.ca",
+  "9sm5xK":"http://www.google.com",
+  "FAen9V":"http://youtube.com"
+}
+*/
+
 // We need to read our urls from our Url database saved in a text file
 let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err, data) => {
   if (err) {
@@ -17,7 +25,10 @@ let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err, data) => {
 let parsedData = JSON.parse(data);
 
 urlDatabase = {...parsedData};
-
+// For testing purposes we need to add these links every server startup
+urlDatabase["b2xVn2"] = "http://www.lighthouselabs.ca";
+urlDatabase["9sm5xK"] = "http://www.google.com";
+urlDatabase["FAen9V"] = "http://youtube.com";
 
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -69,6 +80,22 @@ app.post("/urls", (req, res) => {
     // file written successfully
   });
   res.redirect(302, `/urls/${shortString}`); // Redirects the link
+});
+
+// adding a delete button and handling the POST request
+app.post("/urls/:id/delete", (req, res) => {
+  
+  delete urlDatabase[req.params.id];
+  // The following code will update our saved text file url database
+  let urlDatabaseJSON = JSON.stringify(urlDatabase);
+  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
+    if (err) {
+      console.error(err);
+    }
+    // file written successfully
+  });
+
+  res.redirect(302, `/urls`);
 });
 
 // Redirects to external websites using the longURL
