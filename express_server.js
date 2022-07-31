@@ -57,6 +57,20 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+app.post("/urls/:id/edit", (req, res) => {
+  urlDatabase[req.params.id] = req.body['longURL'];
+  let urlDatabaseJSON = JSON.stringify(urlDatabase);
+  // Saving the new urlDatabase object into the text file
+  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
+    if (err) {
+      console.error(err);
+    }
+    // file written successfully
+  });
+
+  res.redirect(302, `/urls`);
+});
+
 app.get("/urls/:id", (req, res) => {
   const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
   if (urlDatabase[req.params.id] === undefined) {
