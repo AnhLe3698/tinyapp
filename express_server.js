@@ -24,7 +24,7 @@ urlDatabase = {...parsedData};
 // For testing purposes we need to add these links every server startup
 urlDatabase["b2xVn2"] = "http://www.lighthouselabs.ca";
 urlDatabase["9sm5xK"] = "http://www.google.com";
-urlDatabase["FAen9V"] = "http://youtube.com";
+urlDatabase["FAen9V"] = "http://www.youtube.com";
 
 //Middleware
 app.use(express.urlencoded({ extended: true }));
