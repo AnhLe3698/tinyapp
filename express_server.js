@@ -1,5 +1,6 @@
 // Adding our dependencies
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const fs = require('fs');
 // Starting the server and initializing the PORT
 const app = express();
@@ -28,6 +29,7 @@ urlDatabase["FAen9V"] = "http://www.youtube.com";
 
 //Middleware
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 //Listener
 app.listen(PORT, () => {
@@ -45,7 +47,10 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  const templateVars  = { urls: urlDatabase };
+  const templateVars  = {
+    urls: urlDatabase,
+    username: req.cookies["username"],
+  };
   res.render("urls_index", templateVars);
 });
 
@@ -120,6 +125,11 @@ app.get("/u/:id", (req, res) => {
     res.redirect(302, longURL);
   }
   
+});
+
+app.post("/login", (req, res) => {
+  res.cookie("username", req.body['username']);
+  res.redirect(302, "/urls");
 });
 
 // Generate 6 random alphanumeric characters as a single string
