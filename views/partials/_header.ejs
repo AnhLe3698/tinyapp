@@ -18,8 +18,8 @@
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
       </div>
     </div>
-    
-    <% if (username === undefined) { %>
+    <!--The login must not change state for an undefined or empty string-->
+    <% if (username === undefined || username === "") { %>
       <form class="form-inline" method="POST" action="/login" >
         <input
         class="form-control"
@@ -27,12 +27,16 @@
         name="username"
         placeholder="Username"
         />
-        <button type="submit" class="btn btn-primary" style="margin-left: 5px;">Login</button>
+        <button type="submit" class="btn btn-primary" style="margin-left: 5px; 
+        color: black; border-color: black; background-color: #28a745;">Login</button>
       </form>
     <% }  else { %>
       <form class="form-inline" method="POST" action="/logout">
-        <label>Logged in as: <%= username %></label>
-        <button type="submit" class="btn btn-primary" style="margin-left: 5px;">Logout</button>
+        <label style="font-size: 18px;">Logged in as: <%= username %></label>
+        <input name="buttonInput" value="<%= username %>" hidden>
+        <button type="submit" 
+        class="btn btn-primary" style="margin-left: 5px; 
+        color: black; border-color: black; background-color: #28a745;">Logout</button>
       </form>
     <% } %>
   </nav>

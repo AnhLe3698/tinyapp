@@ -132,6 +132,12 @@ app.post("/login", (req, res) => {
   res.redirect(302, "/urls");
 });
 
+app.post("/logout", (req,res) => {
+  res.clearCookie("username", req.body["buttonInput"]);
+  console.log(req.body["buttonInput"]);
+  res.redirect(302, "/urls");
+});
+
 // Generate 6 random alphanumeric characters as a single string
 let generateRandomString = function() {
   let randomNumbers = [];
