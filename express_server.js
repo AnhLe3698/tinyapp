@@ -31,6 +31,21 @@ urlDatabase["FAen9V"] = "http://www.youtube.com";
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Initializing user dataBase
+// Future: add a text file to store this object as a JSON object
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
+
 //Listener
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
@@ -151,11 +166,36 @@ app.post("/logout", (req,res) => {
 app.get("/register", (req, res) => {
   const templateVars  = {
     username: req.cookies["username"],
+    InvalidAccountInfo: req.cookies["InvalidAccountInfo"]
   };
+  // Checks if we had an invalid registration attempt
   res.render("register", templateVars);
 });
 
 app.post("/register", (req,res) => {
+  if (req.body.email !== undefined && req.body.email !== "") {
+    if (req.body.password !== undefined && req.body.password !== "") {
+
+      res.clearCookie("InvalidAccountInfo", true);
+      let userID = generateRandomString();
+      let newUser = {
+        id: userID,
+        email: req.body.email,
+        password: req.body.password
+      };
+      users[userID] = newUser;
+      res.cookie("user_id", userID);
+      res.redirect(302, "/urls");
+    } else {
+      res.cookie("InvalidAccountInfo", "true");
+      res.redirect(302, "/register");
+    }
+  } else {
+  // The following cookie is used to pass a message if
+  // invalid registration information is passed
+    res.cookie("InvalidAccountInfo", "true");
+    res.redirect(302, "/register");
+  }
 
 });
 
