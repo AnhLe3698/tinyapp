@@ -62,9 +62,10 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  let userID = req.cookies["user_id"];
   const templateVars  = {
     urls: urlDatabase,
-    username: req.cookies["username"],
+    userID: users[userID]
   };
   res.render("urls_index", templateVars);
 });
@@ -74,9 +75,10 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
+  let userID = req.cookies["user_id"];
   const templateVars  = {
     urls: urlDatabase,
-    username: req.cookies["username"],
+    userID: users[userID]
   };
   res.render("urls_new", templateVars);
 });
@@ -95,11 +97,29 @@ app.post("/urls/:id/edit", (req, res) => {
   res.redirect(302, `/urls`);
 });
 
+// adding a delete button and handling the POST request
+app.post("/urls/:id/delete", (req, res) => {
+  
+  delete urlDatabase[req.params.id];
+  console.log(urlDatabase);
+  // The following code will update our saved text file url database
+  let urlDatabaseJSON = JSON.stringify(urlDatabase);
+  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
+    if (err) {
+      console.error(err);
+    }
+    // file written successfully
+  });
+
+  res.redirect(302, `/urls`);
+});
+
 app.get("/urls/:id", (req, res) => {
+  let userID = req.cookies["user_id"];
   const templateVars = {
     id: req.params.id,
     longURL: urlDatabase[req.params.id],
-    username: req.cookies["username"]
+    userID: users[userID]
   };
   if (urlDatabase[req.params.id] === undefined) {
     res.send('Invalid short url');
@@ -123,22 +143,6 @@ app.post("/urls", (req, res) => {
   res.redirect(302, `/urls/${shortString}`); // Redirects the link
 });
 
-// adding a delete button and handling the POST request
-app.post("/urls/:id/delete", (req, res) => {
-  
-  delete urlDatabase[req.params.id];
-  // The following code will update our saved text file url database
-  let urlDatabaseJSON = JSON.stringify(urlDatabase);
-  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
-    if (err) {
-      console.error(err);
-    }
-    // file written successfully
-  });
-
-  res.redirect(302, `/urls`);
-});
-
 // Redirects to external websites using the longURL
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
@@ -154,18 +158,17 @@ app.get("/u/:id", (req, res) => {
 // res.cookies[key] calls an existing cookie
 // res.clearCookie(key, value) deletes a cookie
 app.post("/login", (req, res) => {
-  res.cookie("username", req.body['username']);
   res.redirect(302, "/urls");
 });
 
 app.post("/logout", (req,res) => {
-  res.clearCookie("username", req.body["buttonInput"]);
+  res.clearCookie("user_id", req.body["buttonInput"]);
   res.redirect(302, "/urls");
 });
 
 app.get("/register", (req, res) => {
   const templateVars  = {
-    username: req.cookies["username"],
+    //username: req.cookies["username"],
     InvalidAccountInfo: req.cookies["InvalidAccountInfo"]
   };
   // Checks if we had an invalid registration attempt
@@ -175,7 +178,6 @@ app.get("/register", (req, res) => {
 app.post("/register", (req,res) => {
   if (req.body.email !== undefined && req.body.email !== "") {
     if (req.body.password !== undefined && req.body.password !== "") {
-
       res.clearCookie("InvalidAccountInfo", true);
       let userID = generateRandomString();
       let newUser = {
@@ -188,13 +190,13 @@ app.post("/register", (req,res) => {
       res.redirect(302, "/urls");
     } else {
       res.cookie("InvalidAccountInfo", "true");
-      res.redirect(302, "/register");
+      res.redirect(400, "/register");
     }
   } else {
   // The following cookie is used to pass a message if
   // invalid registration information is passed
     res.cookie("InvalidAccountInfo", "true");
-    res.redirect(302, "/register");
+    res.redirect(400, "/register");
   }
 
 });

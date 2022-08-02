@@ -19,21 +19,21 @@
       </div>
     </div>
     <!--The login must not change state for an undefined or empty string-->
-    <% if (username === undefined || username === "") { %>
+    <% if (typeof userID === "undefined" || userID['email'] === undefined || userID['email'] === "") { %>
       <form class="form-inline" method="POST" action="/login" >
         <input
         class="form-control"
         type="text"
         name="username"
-        placeholder="Username"
+        placeholder="Email"
         />
         <button type="submit" class="btn btn-primary" style="margin-left: 5px; 
         color: black; border-color: black; background-color: #28a745;">Login</button>
       </form>
     <% }  else { %>
       <form class="form-inline" method="POST" action="/logout">
-        <label style="font-size: 18px;">Logged in as: <%= username %></label>
-        <input name="buttonInput" value="<%= username %>" hidden>
+        <label style="font-size: 18px;">Logged in as: <%= userID.email %></label>
+        <input name="buttonInput" value="<%= userID.id %>" hidden>
         <button type="submit" 
         class="btn btn-primary" style="margin-left: 5px; 
         color: black; border-color: black; background-color: #28a745;">Logout</button>
