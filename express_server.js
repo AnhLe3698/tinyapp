@@ -59,7 +59,11 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  const templateVars  = {
+    urls: urlDatabase,
+    username: req.cookies["username"],
+  };
+  res.render("urls_new", templateVars);
 });
 
 app.post("/urls/:id/edit", (req, res) => {
@@ -77,7 +81,11 @@ app.post("/urls/:id/edit", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  const templateVars = { id: req.params.id, longURL: urlDatabase[req.params.id] };
+  const templateVars = {
+    id: req.params.id,
+    longURL: urlDatabase[req.params.id],
+    username: req.cookies["username"]
+  };
   if (urlDatabase[req.params.id] === undefined) {
     res.send('Invalid short url');
   } else {
@@ -127,6 +135,9 @@ app.get("/u/:id", (req, res) => {
   
 });
 
+// res.cookie(key, value) initializes a cookie
+// res.cookies[key] calls an existing cookie
+// res.clearCookie(key, value) deletes a cookie
 app.post("/login", (req, res) => {
   res.cookie("username", req.body['username']);
   res.redirect(302, "/urls");
@@ -134,8 +145,18 @@ app.post("/login", (req, res) => {
 
 app.post("/logout", (req,res) => {
   res.clearCookie("username", req.body["buttonInput"]);
-  console.log(req.body["buttonInput"]);
   res.redirect(302, "/urls");
+});
+
+app.get("/register", (req, res) => {
+  const templateVars  = {
+    username: req.cookies["username"],
+  };
+  res.render("register", templateVars);
+});
+
+app.post("/register", (req,res) => {
+
 });
 
 // Generate 6 random alphanumeric characters as a single string
