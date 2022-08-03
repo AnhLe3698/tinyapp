@@ -89,31 +89,20 @@ app.get("/urls/new", (req, res) => {
 
 app.post("/urls/:id/edit", (req, res) => {
   urlDatabase[req.params.id] = req.body['longURL'];
-  let urlDatabaseJSON = JSON.stringify(urlDatabase);
-  // Saving the new urlDatabase object into the text file
-  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
-    if (err) {
-      console.error(err);
-    }
-    // file written successfully
-  });
+  
+  // updating the save file with all our urls
+  writeToFileDatabase(urlDatabase);
 
   res.redirect(302, `/urls`);
 });
 
 // adding a delete button and handling the POST request
 app.post("/urls/:id/delete", (req, res) => {
-  
+  // Deleting a url
   delete urlDatabase[req.params.id];
-  console.log(urlDatabase);
+
   // The following code will update our saved text file url database
-  let urlDatabaseJSON = JSON.stringify(urlDatabase);
-  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
-    if (err) {
-      console.error(err);
-    }
-    // file written successfully
-  });
+  writeToFileDatabase(urlDatabase);
 
   res.redirect(302, `/urls`);
 });
@@ -133,17 +122,12 @@ app.get("/urls/:id", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body); // Log the POST request body to the console
+  // generating url ID
   let shortString = generateRandomString();
+  // Adding new url element to url database
   urlDatabase[shortString] = req.body['longURL'];
-  let urlDatabaseJSON = JSON.stringify(urlDatabase);
-  // Saving the new urlDatabase object into the text file
-  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
-    if (err) {
-      console.error(err);
-    }
-    // file written successfully
-  });
+  // Writing to database
+  writeToFileDatabase(urlDatabase);
   res.redirect(302, `/urls/${shortString}`); // Redirects the link
 });
 
@@ -162,7 +146,13 @@ app.get("/u/:id", (req, res) => {
 // res.cookies[key] calls an existing cookie
 // res.clearCookie(key, value) deletes a cookie
 app.post("/login", (req, res) => {
-  res.redirect(302, "/urls");
+  let userID = getUserByEmail(req.body.email, users);
+  if (userID !== undefined && req.body.password === users[userID].password) {
+    res.cookie("user_id", userID);
+    res.redirect(302, "/urls");
+  } else {
+    res.redirect(302, "login");
+  }
 });
 
 app.post("/logout", (req,res) => {
@@ -207,6 +197,7 @@ app.post("/register", (req,res) => {
 
 });
 
+
 //Checking if the user email already exists in the users object
 let getUserByEmail = function(userEmail, users) {
   for (const userIDs in users) {
@@ -216,6 +207,17 @@ let getUserByEmail = function(userEmail, users) {
   }
   return undefined;
 };
+
+let writeToFileDatabase = function(urls) {
+  let urlDatabaseJSON = JSON.stringify(urls);
+  // Saving the new urlDatabase object into the text file
+  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
+    if (err) {
+      console.error(err);
+    }
+    // file written successfully
+  });
+}
 
 // Generate 6 random alphanumeric characters as a single string
 let generateRandomString = function() {

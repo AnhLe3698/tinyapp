@@ -20,14 +20,14 @@
     </div>
     <!--The login must not change state for an undefined or empty string-->
     <% if (typeof userID === "undefined" || userID['email'] === undefined || userID['email'] === "") { %>
-      <form class="form-inline" method="GET" action="/register" >
-        <button type="submit" class="btn btn-primary" style="margin-left: 5px; 
-        color: black; border-color: black; background-color: #28a745;">Register</button>
-      </form>
-      <form class="form-inline" method="GET" action="/login" >
-        <button type="submit" class="btn btn-primary" style="margin-left: 5px; 
-        color: black; border-color: black; background-color: #28a745;">Login</button>
-      </form>
+
+        <form class="form-inline">
+          <a role="button" href="/register" type="submit" class="btn btn-primary" style="float: right; 
+          color: white; border-color: #28a745; background-color: #28a745;">Register</a>
+          <a role="button" href="/login" type="submit" class="btn btn-secondary" style="margin-left: 5px; 
+            color: white;  border-color: #28a745; background-color: #28a745;">Login </a>
+        </form>
+        
     <% }  else { %>
       <form class="form-inline" method="POST" action="/logout">
         <label style="font-size: 18px;">Logged in as: <%= userID.email %></label>
