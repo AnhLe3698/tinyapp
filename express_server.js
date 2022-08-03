@@ -74,6 +74,10 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
+app.get("/login", (req, res) => {
+  res.render("login");
+});
+
 app.get("/urls/new", (req, res) => {
   let userID = req.cookies["user_id"];
   const templateVars  = {
@@ -168,7 +172,6 @@ app.post("/logout", (req,res) => {
 
 app.get("/register", (req, res) => {
   const templateVars  = {
-    //username: req.cookies["username"],
     InvalidAccountInfo: req.cookies["InvalidAccountInfo"]
   };
   // Checks if we had an invalid registration attempt
@@ -176,8 +179,11 @@ app.get("/register", (req, res) => {
 });
 
 app.post("/register", (req,res) => {
+  // The following variable will check if an email exists
+  // If getUserByEmail cannot locate email, it will return undefined
+  let checkDuplicateEmail = getUserByEmail(req.body.email, users);
   if (req.body.email !== undefined && req.body.email !== "") {
-    if (req.body.password !== undefined && req.body.password !== "") {
+    if (checkDuplicateEmail === undefined && req.body.password !== undefined && req.body.password !== "") {
       res.clearCookie("InvalidAccountInfo", true);
       let userID = generateRandomString();
       let newUser = {
@@ -200,6 +206,16 @@ app.post("/register", (req,res) => {
   }
 
 });
+
+//Checking if the user email already exists in the users object
+let getUserByEmail = function(userEmail, users) {
+  for (const userIDs in users) {
+    if (users[userIDs].email === userEmail) {
+      return userIDs;
+    }
+  }
+  return undefined;
+};
 
 // Generate 6 random alphanumeric characters as a single string
 let generateRandomString = function() {

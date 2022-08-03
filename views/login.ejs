@@ -9,36 +9,26 @@
       crossorigin="anonymous"
     />
   </head>
-
   <body>
-    <%- include('partials/_header') %>
-    <div class="card text-center">
+    <div class="class text-center">
       <div class="card-header"></div>
       <div class="card-body">
-        <h5 class="card-title">TinyURL for: <%= longURL %></h5>
-        <p class="card-text">
-          Short URL ID: <a href="/u/<%= id %>"><%= id %></a>
-        </p>
-        <div class="card text-center" >
-          <h6 class="card-title" style="color: rgba(128, 128, 128, 0.915); font-size: 30px; margin-top: 15px;">Edit</h6>
-          <form class="card-title" class="form-inline" action="/urls/<%= id %>/edit" method="POST" style="color: rgba(128, 128, 128, 0.915);">
-          <label for="longURL" >New URL:</label>
-          <input
-            class="card-title"
-            class="form-control"
-            type="text"
-            name="longURL"
-            placeholder="http://"
-            style="width: 300px; margin: 1em;"
-          />
+        <h5 class="card-title">Login</h5>
+        <form method="POST" action="/login">
+          <div class="form-group">
+            <label for="InputEmail1">Email address</label>
+            <input type="email" name="email" class="form-control" id="InputEmail1" aria-describedby="emailHelp" placeholder="Enter email">
+              <small id="emailHelp" class="form-text text-muted">Please enter a valid email and password</small>
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input name="password" type="password" class="form-control" id="password" placeholder="Password">
+          </div>
           <button type="submit" class="btn btn-primary">Submit</button>
-          </form>
-        
-        </div>
+        </form>
       </div>
-      <div class="card-footer text-muted"></div>
     </div>
-    <!-- Bootstrap JS -->
+
     <script
       src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
       integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"

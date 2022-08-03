@@ -20,13 +20,11 @@
     </div>
     <!--The login must not change state for an undefined or empty string-->
     <% if (typeof userID === "undefined" || userID['email'] === undefined || userID['email'] === "") { %>
-      <form class="form-inline" method="POST" action="/login" >
-        <input
-        class="form-control"
-        type="text"
-        name="username"
-        placeholder="Email"
-        />
+      <form class="form-inline" method="GET" action="/register" >
+        <button type="submit" class="btn btn-primary" style="margin-left: 5px; 
+        color: black; border-color: black; background-color: #28a745;">Register</button>
+      </form>
+      <form class="form-inline" method="GET" action="/login" >
         <button type="submit" class="btn btn-primary" style="margin-left: 5px; 
         color: black; border-color: black; background-color: #28a745;">Login</button>
       </form>
