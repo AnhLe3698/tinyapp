@@ -6,7 +6,6 @@ const fs = require('fs');
 const app = express();
 const PORT = 8080; // default port 8080
 
-app.set("view engine", "ejs");
 // Initialzing Database
 let urlDatabase = {};
 
@@ -28,6 +27,7 @@ urlDatabase["9sm5xK"] = "http://www.google.com";
 urlDatabase["FAen9V"] = "http://www.youtube.com";
 
 //Middleware
+app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -72,10 +72,6 @@ app.get("/urls", (req, res) => {
 
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
-app.get("/login", (req, res) => {
-  res.render("login");
 });
 
 app.get("/urls/new", (req, res) => {
@@ -142,6 +138,16 @@ app.get("/u/:id", (req, res) => {
   
 });
 
+app.get("/login", (req, res) => {
+  let userID = req.cookie['user_id'];
+  // CHecking if there is a cookie and that it is valid
+  if (users[userID].id === userID) {
+    res.redirect(302, '/urls');
+  } else {
+    res.render("login");
+  }
+});
+
 // res.cookie(key, value) initializes a cookie
 // res.cookies[key] calls an existing cookie
 // res.clearCookie(key, value) deletes a cookie
@@ -164,8 +170,14 @@ app.get("/register", (req, res) => {
   const templateVars  = {
     InvalidAccountInfo: req.cookies["InvalidAccountInfo"]
   };
-  // Checks if we had an invalid registration attempt
-  res.render("register", templateVars);
+  let userID = req.cookie['user_id'];
+  // CHecking if there is a cookie and that it is valid
+  if (users[userID].id === userID) {
+    res.redirect(302, '/urls');
+  } else {
+    // InvalidAccountInfo hecks if we had an invalid registration attempt
+    res.render("register", templateVars);
+  }
 });
 
 app.post("/register", (req,res) => {
@@ -199,7 +211,7 @@ app.post("/register", (req,res) => {
 
 
 //Checking if the user email already exists in the users object
-let getUserByEmail = function(userEmail, users) {
+const getUserByEmail = function(userEmail, users) {
   for (const userIDs in users) {
     if (users[userIDs].email === userEmail) {
       return userIDs;
@@ -208,7 +220,7 @@ let getUserByEmail = function(userEmail, users) {
   return undefined;
 };
 
-let writeToFileDatabase = function(urls) {
+const writeToFileDatabase = function(urls) {
   let urlDatabaseJSON = JSON.stringify(urls);
   // Saving the new urlDatabase object into the text file
   fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
@@ -217,10 +229,10 @@ let writeToFileDatabase = function(urls) {
     }
     // file written successfully
   });
-}
+};
 
 // Generate 6 random alphanumeric characters as a single string
-let generateRandomString = function() {
+const generateRandomString = function() {
   let randomNumbers = [];
   for (let i = 0; i < 6; i++) {
     // Generating numbers that will represent
