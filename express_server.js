@@ -30,7 +30,7 @@ app.listen(PORT, () => {
 // Initialzing URL Database
 let urlDatabase = {};
 
-//Initialzing Database Part 2
+//Initialzing URL Database Part 2
 //We need to read our urls from our Url database saved in a text file
 let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err) => {
   if (err) {
@@ -38,19 +38,21 @@ let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err) => {
     return;
   }
 });
-
 if (data.length !== 0) { // Checks if there is no data
   let parsedData = JSON.parse(data);
   urlDatabase = {...parsedData};
 }
 
+// Initialzing User Database
+let users = {};
+
+// Initialzing User Database Part 2
 let data1 = fs.readFileSync('./savedUsers.txt', 'utf8', (err) => {
   if (err) {
     console.error(err);
     return;
   }
 });
-
 if (data1.length !== 0) { // Checks if there is no data
   let parsedData = JSON.parse(data1);
   users = {...parsedData};
@@ -78,19 +80,19 @@ urlDatabase['9sm5xK'] = {
   userID: "tJ45ls",
 };
 
-// Initializing USER dataBase
-let users = {
-  aJ48lW: {
-    id: "aJ48lW",
-    email: "user@example.com",
-    password: "1234",
-  },
-  tJ45ls: {
-    id: "tJ45ls",
-    email: "user2@example.com",
-    password: "1234",
-  },
+// Initializing USER dataBase Part 3
+//For testing purposes we need to add these users every server startup
+users['aJ48lW'] = {
+  id: "aJ48lW",
+  email: "user@example.com",
+  password: "1234"
 };
+users['tJ45ls'] = {
+  id: "tJ45ls",
+  email: "user2@example.com",
+  password: "1234"
+};
+
 
 
 //////////////////////////////////////////////////////
@@ -282,5 +284,4 @@ app.post("/register", (req,res) => {
     res.cookie("InvalidAccountInfo", "true");
     res.redirect(400, "/register");
   }
-
 });
