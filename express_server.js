@@ -1,7 +1,8 @@
 // Adding our dependencies
 const express = require('express');
 const cookieParser = require('cookie-parser');
-//const fs = require('fs');
+// const fs = require('fs');
+
 //Imported functions;
 
 // Starting the server and initializing the PORT
@@ -65,8 +66,8 @@ const getUrls = function(userID) {
 
 /////////////////////////////////////////////////////////////////////
 //////////MAJOR DATABASE REFACTORING/////////////////////////////////
-// Initialzing Database Part 2
-// We need to read our urls from our Url database saved in a text file
+//Initialzing Database Part 2
+//We need to read our urls from our Url database saved in a text file
 // let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err) => {
 //   if (err) {
 //     console.error(err);
@@ -96,11 +97,11 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
+//Sends urls as a Json object
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
+});
 
-// Sends urls as a Json object
-// app.get("/urls.json", (req, res) => {
-//   res.json(urlDatabase);
-// });
 
 app.get("/urls", (req, res) => {
   let userID = req.cookies["user_id"];
@@ -108,7 +109,13 @@ app.get("/urls", (req, res) => {
     urls: getUrls(userID),
     userID: users[userID]
   };
-  res.render("urls_index", templateVars);
+  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+    res.render("urls_index", templateVars);
+  } else {
+
+    res.send('<html><body><a href="/login"">Please login/register to access this page</a></body></html>\n');
+  }
+  
 });
 
 
@@ -157,11 +164,18 @@ app.get("/urls/:id", (req, res) => {
     longURL: getUrls(userID)[req.params.id],
     userID: users[userID]
   };
-  if (urlDatabase[req.params.id] === undefined) {
-    res.send('Invalid short url');
+  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+    if (urlDatabase[req.params.id] === undefined) {
+      res.send('Invalid short url');
+    } else if (urlDatabase[req.params.id]['userID'] !== userID) {
+      res.send('<html><body><a href="/urls"">This short URL does not belong to you</a></body></html>\n');
+    } else {
+      res.render("urls_show", templateVars);
+    }
   } else {
-    res.render("urls_show", templateVars);
+    res.send('<html><body><a href="/login"">Please login/register to access this page</a></body></html>\n');
   }
+  
 });
 
 // creates new links
@@ -181,18 +195,19 @@ app.post("/urls", (req, res) => {
     //writeToFileDatabase(urlDatabase);
     res.redirect(302, `/urls/${shortString}`); // Redirects the link
   } else {
-    res.send('Please login for access to this functionality');
+    res.send('<html><body><a href="/login"">Please login/register to access this page</a></body></html>\n');
     //res.redirect(302, '/urls');
   }
 });
 
 // Redirects to external websites using the longURL
 app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id].longURL;
-  if (longURL === undefined) {
-    res.redirect(400);
+  const urlObject = urlDatabase[req.params.id];
+  if (urlObject === undefined) {
+    res.send("<html><body>The short url is not a valid ID</body></html>\n");
   } else {
-    res.redirect(302, longURL);
+   
+    res.redirect(302, urlObject.longURL);
   }
   
 });
