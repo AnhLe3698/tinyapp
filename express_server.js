@@ -102,20 +102,27 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+// This security will help reduce repetition of code.
+const appSecurity = function(req, callback, callback2) {
+  let userID = req.cookies["user_id"];
+  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+    callback();
+  } else {
+    callback2();
+  }
+};
 
 app.get("/urls", (req, res) => {
   let userID = req.cookies["user_id"];
-  const templateVars  = {
-    urls: urlsForUser(userID),
-    userID: users[userID]
-  };
-  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+  appSecurity(req, () => {
+    const templateVars  = {
+      urls: urlsForUser(userID),
+      userID: users[userID]
+    };
     res.render("urls_index", templateVars);
-  } else {
-
+  }, () => {
     res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
-  }
-  
+  });
 });
 
 
@@ -141,7 +148,7 @@ app.post("/urls/:id/edit", (req, res) => {
       urlDatabase[req.params.id].longURL = req.body['longURL'];
       res.redirect(302, `/urls`);
     } else {
-      res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n'); 
+      res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n');
     }
   } else {
     res.send('Please login/register to access the edit page'); // No need for HTML
@@ -158,7 +165,7 @@ app.post("/urls/:id/delete", (req, res) => {
       delete urlDatabase[req.params.id];
       res.redirect(302, `/urls`);
     } else {
-      res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n'); 
+      res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n');
     }
   } else {
     res.send('Please login/register to access the delete page'); // No need fo HTML
