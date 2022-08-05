@@ -228,9 +228,11 @@ app.get("/login", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  appSecurity(req, () => {
-    let userID = getUserByEmail(req.body.email, users);
+  let userID = getUserByEmail(req.body.email, users);
+  if (userID !== undefined && req.body.password === users[userID].password) {
     res.cookie("user_id", userID);
+  }
+  appSecurity(req, () => {
     res.redirect(302, "/urls");
   }, () => {
     res.redirect(302, "login");
@@ -239,7 +241,7 @@ app.post("/login", (req, res) => {
 
 app.post("/logout", (req,res) => {
   res.clearCookie("user_id", req.body["buttonInput"]);
-  res.redirect(302, "/urls");
+  res.redirect(302, "/login");
 });
 
 app.get("/register", (req, res) => {
