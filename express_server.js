@@ -1,30 +1,51 @@
 // Adding our dependencies
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const fs = require('fs');
+//const fs = require('fs');
 // Starting the server and initializing the PORT
 const app = express();
 const PORT = 8080; // default port 8080
 
 // Initialzing Database
-let urlDatabase = {};
+const urlDatabase = {
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
+};
 
+const getUrls = function(userID) {
+  let dataObject = {};
+  for (const shortUrls in urlDatabase) {
+    if (userID === urlDatabase[shortUrls].userID) {
+      dataObject[shortUrls] = urlDatabase[shortUrls].longURL;
+    }
+  }
+  return dataObject;
+};
+
+/////////////////////////////////////////////////////////////////////
+//////////MAJOR DATABASE REFACTORING/////////////////////////////////
 // Initialzing Database Part 2
 // We need to read our urls from our Url database saved in a text file
-let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
-});
-let parsedData = JSON.parse(data);
-urlDatabase = {...parsedData};
+// let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err) => {
+//   if (err) {
+//     console.error(err);
+//     return;
+//   }
+// });
+// let parsedData = JSON.parse(data);
+// urlDatabase = {...parsedData};
 
 // Initialzing Database part 3
 // For testing purposes we need to add these links every server startup
-urlDatabase["b2xVn2"] = "http://www.lighthouselabs.ca";
-urlDatabase["9sm5xK"] = "http://www.google.com";
-urlDatabase["FAen9V"] = "http://www.youtube.com";
+// urlDatabase["b2xVn2"] = "http://www.lighthouselabs.ca";
+// urlDatabase["9sm5xK"] = "http://www.google.com";
+// urlDatabase["FAen9V"] = "http://www.youtube.com";
 
 //Middleware
 app.set("view engine", "ejs");
@@ -34,15 +55,10 @@ app.use(cookieParser());
 // Initializing user dataBase
 // Future: add a text file to store this object as a JSON object
 const users = {
-  userRandomID: {
-    id: "userRandomID",
+  aJ48lW: {
+    id: "aJ48lW",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur",
-  },
-  user2RandomID: {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk",
+    password: "1234",
   },
 };
 
@@ -57,9 +73,9 @@ app.get("/", (req, res) => {
 
 
 // Sends urls as a Json object
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
+// app.get("/urls.json", (req, res) => {
+//   res.json(urlDatabase);
+// });
 
 app.get("/urls", (req, res) => {
   let userID = req.cookies["user_id"];
