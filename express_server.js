@@ -83,7 +83,8 @@ app.get("/urls/new", (req, res) => {
   if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
     res.render("urls_new", templateVars);
   } else {
-    res.redirect(302, '/urls');
+
+    res.redirect(302, '/login');
   }
 });
 
@@ -134,7 +135,8 @@ app.post("/urls", (req, res) => {
     writeToFileDatabase(urlDatabase);
     res.redirect(302, `/urls/${shortString}`); // Redirects the link
   } else {
-    res.redirect(302, '/urls');
+    res.send('Please login for access to this functionality');
+    //res.redirect(302, '/urls');
   }
    
 });
@@ -143,7 +145,7 @@ app.post("/urls", (req, res) => {
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
   if (longURL === undefined) {
-    res.send('Invalid short url');
+    res.redirect(400);
   } else {
     res.redirect(302, longURL);
   }
