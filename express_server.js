@@ -114,11 +114,11 @@ const appSecurity = function(req, callback, callback2) {
 
 app.get("/urls", (req, res) => {
   let userID = req.cookies["user_id"];
+  const templateVars  = {
+    urls: urlsForUser(userID),
+    userID: users[userID]
+  };
   appSecurity(req, () => {
-    const templateVars  = {
-      urls: urlsForUser(userID),
-      userID: users[userID]
-    };
     res.render("urls_index", templateVars);
   }, () => {
     res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
@@ -133,26 +133,24 @@ app.get("/urls/new", (req, res) => {
     urls: urlsForUser(userID),
     userID: users[userID]
   };
-  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+  appSecurity(req, () => {
     res.render("urls_new", templateVars);
-  } else {
-
+  }, () => {
     res.redirect(302, '/login');
-  }
+  });
 });
 
 app.post("/urls/:id/edit", (req, res) => {
-  let userID = req.cookies["user_id"];
-  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+  appSecurity(req, () => {
     if (urlDatabase[req.params.id]) {
       urlDatabase[req.params.id].longURL = req.body['longURL'];
       res.redirect(302, `/urls`);
     } else {
       res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n');
     }
-  } else {
+  }, () => {
     res.send('Please login/register to access the edit page'); // No need for HTML
-  }
+  });
   // updating the save file with all our urls
   // writeToFileDatabase(urlDatabase);
 });
