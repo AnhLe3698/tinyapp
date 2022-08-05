@@ -106,19 +106,18 @@ app.get("/urls.json", (req, res) => {
 const appSecurity = function(req, callback, callback2) {
   let userID = req.cookies["user_id"];
   if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
-    callback();
+    callback(userID);
   } else {
     callback2();
   }
 };
 
 app.get("/urls", (req, res) => {
-  let userID = req.cookies["user_id"];
-  const templateVars  = {
-    urls: urlsForUser(userID),
-    userID: users[userID]
-  };
-  appSecurity(req, () => {
+  appSecurity(req, (userID) => {
+    const templateVars  = {
+      urls: urlsForUser(userID),
+      userID: users[userID]
+    };
     res.render("urls_index", templateVars);
   }, () => {
     res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
@@ -128,12 +127,11 @@ app.get("/urls", (req, res) => {
 
 
 app.get("/urls/new", (req, res) => {
-  let userID = req.cookies["user_id"];
-  const templateVars  = {
-    urls: urlsForUser(userID),
-    userID: users[userID]
-  };
-  appSecurity(req, () => {
+  appSecurity(req, (userID) => {
+    const templateVars  = {
+      urls: urlsForUser(userID),
+      userID: users[userID]
+    };
     res.render("urls_new", templateVars);
   }, () => {
     res.redirect(302, '/login');
@@ -157,32 +155,27 @@ app.post("/urls/:id/edit", (req, res) => {
 
 // adding a delete button and handling the POST request
 app.post("/urls/:id/delete", (req, res) => {
-  let userID = req.cookies["user_id"];
-  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+  appSecurity(req, () => {
     if (urlDatabase[req.params.id]) {
       delete urlDatabase[req.params.id];
       res.redirect(302, `/urls`);
     } else {
       res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n');
     }
-  } else {
+  }, () => {
     res.send('Please login/register to access the delete page'); // No need fo HTML
-  }
-  
+  });
   // The following code will update our saved text file url database
   //writeToFileDatabase(urlDatabase);
-
-  
 });
 
 app.get("/urls/:id", (req, res) => {
-  let userID = req.cookies["user_id"];
-  const templateVars = {
-    id: req.params.id,
-    longURL: urlsForUser(userID)[req.params.id],
-    userID: users[userID]
-  };
-  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+  appSecurity(req, (userID) => {
+    const templateVars = {
+      id: req.params.id,
+      longURL: urlsForUser(userID)[req.params.id],
+      userID: users[userID]
+    };
     if (urlDatabase[req.params.id] === undefined) {
       res.send('Invalid short url');
     } else if (urlDatabase[req.params.id]['userID'] !== userID) {
@@ -190,17 +183,16 @@ app.get("/urls/:id", (req, res) => {
     } else {
       res.render("urls_show", templateVars);
     }
-  } else {
+  }, () => {
     res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
-  }
+  });
   
 });
 
 // creates new links
 app.post("/urls", (req, res) => {
   
-  let userID = req.cookies['user_id'];
-  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+  appSecurity(req, (userID) => {
     // generating url ID
     let shortString = generateRandomString();
     // Adding new url element to url database
@@ -209,13 +201,12 @@ app.post("/urls", (req, res) => {
       userID
     };
     urlDatabase[shortString] = urlObject;
-    // Writing to database
-    //writeToFileDatabase(urlDatabase);
-    res.redirect(302, `/urls/${shortString}`); // Redirects the link
-  } else {
+    
+    //writeToFileDatabase(urlDatabase); // Writing to database
+    res.redirect(302, `/urls/${shortString}`);
+  }, () => {
     res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
-    //res.redirect(302, '/urls');
-  }
+  });
 });
 
 // Redirects to external websites using the longURL
@@ -224,33 +215,26 @@ app.get("/u/:id", (req, res) => {
   if (urlObject === undefined) {
     res.send("<html><body>The short url is not a valid ID</body></html>\n");
   } else {
-   
     res.redirect(302, urlObject.longURL);
   }
-  
 });
 
 app.get("/login", (req, res) => {
-  let userID = req.cookies['user_id'];
-  // CHecking if there is a cookie and that it is valid
-  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+  appSecurity(req, () => {
     res.redirect(302, '/urls');
-  } else {
+  }, () => {
     res.render("login");
-  }
+  })l
 });
 
-// res.cookie(key, value) initializes a cookie
-// req.cookies[key] calls an existing cookie
-// res.clearCookie(key, value) deletes a cookie
 app.post("/login", (req, res) => {
-  let userID = getUserByEmail(req.body.email, users);
-  if (userID !== undefined && req.body.password === users[userID].password) {
+  appSecurity(req, () => {
+    let userID = getUserByEmail(req.body.email, users);
     res.cookie("user_id", userID);
     res.redirect(302, "/urls");
-  } else {
+  }, () => {
     res.redirect(302, "login");
-  }
+  });
 });
 
 app.post("/logout", (req,res) => {
@@ -259,17 +243,14 @@ app.post("/logout", (req,res) => {
 });
 
 app.get("/register", (req, res) => {
-  const templateVars  = {
-    InvalidAccountInfo: req.cookies["InvalidAccountInfo"]
-  };
-  let userID = req.cookies['user_id'];
-  // CHecking if there is a cookie and that it is valid
-  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+  appSecurity(req, () => {
     res.redirect(302, '/urls');
-  } else {
-    // InvalidAccountInfo hecks if we had an invalid registration attempt
+  }, () => {
+    const templateVars  = {
+      InvalidAccountInfo: req.cookies["InvalidAccountInfo"]
+    };
     res.render("register", templateVars);
-  }
+  })
 });
 
 app.post("/register", (req,res) => {
