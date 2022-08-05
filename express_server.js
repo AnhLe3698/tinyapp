@@ -80,7 +80,11 @@ app.get("/urls/new", (req, res) => {
     urls: urlDatabase,
     userID: users[userID]
   };
-  res.render("urls_new", templateVars);
+  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect(302, '/urls');
+  }
 });
 
 app.post("/urls/:id/edit", (req, res) => {
@@ -117,14 +121,22 @@ app.get("/urls/:id", (req, res) => {
   }
 });
 
+// creates new links
 app.post("/urls", (req, res) => {
-  // generating url ID
-  let shortString = generateRandomString();
-  // Adding new url element to url database
-  urlDatabase[shortString] = req.body['longURL'];
-  // Writing to database
-  writeToFileDatabase(urlDatabase);
-  res.redirect(302, `/urls/${shortString}`); // Redirects the link
+  
+  let userID = req.cookies['user_id'];
+  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+    // generating url ID
+    let shortString = generateRandomString();
+    // Adding new url element to url database
+    urlDatabase[shortString] = req.body['longURL'];
+    // Writing to database
+    writeToFileDatabase(urlDatabase);
+    res.redirect(302, `/urls/${shortString}`); // Redirects the link
+  } else {
+    res.redirect(302, '/urls');
+  }
+   
 });
 
 // Redirects to external websites using the longURL
@@ -139,9 +151,9 @@ app.get("/u/:id", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  let userID = req.cookie['user_id'];
+  let userID = req.cookies['user_id'];
   // CHecking if there is a cookie and that it is valid
-  if (users[userID].id === userID) {
+  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
     res.redirect(302, '/urls');
   } else {
     res.render("login");
@@ -149,7 +161,7 @@ app.get("/login", (req, res) => {
 });
 
 // res.cookie(key, value) initializes a cookie
-// res.cookies[key] calls an existing cookie
+// req.cookies[key] calls an existing cookie
 // res.clearCookie(key, value) deletes a cookie
 app.post("/login", (req, res) => {
   let userID = getUserByEmail(req.body.email, users);
@@ -170,9 +182,9 @@ app.get("/register", (req, res) => {
   const templateVars  = {
     InvalidAccountInfo: req.cookies["InvalidAccountInfo"]
   };
-  let userID = req.cookie['user_id'];
+  let userID = req.cookies['user_id'];
   // CHecking if there is a cookie and that it is valid
-  if (users[userID].id === userID) {
+  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
     res.redirect(302, '/urls');
   } else {
     // InvalidAccountInfo hecks if we had an invalid registration attempt
