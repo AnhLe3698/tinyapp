@@ -1,9 +1,17 @@
 // Adding our dependencies
 const express = require('express');
 const cookieParser = require('cookie-parser');
-// const fs = require('fs');
+const fs = require('fs');
 
 //Imported functions;
+let {
+  getUserByEmail,
+  urlsForUser,
+  appSecurity,
+  generateRandomString,
+  writeToFileDatabase,
+  writeToUsersDatabase
+} = require('./functions');
 
 // Starting the server and initializing the PORT
 const app = express();
@@ -20,27 +28,58 @@ app.listen(PORT, () => {
 });
 
 // Initialzing URL Database
-const urlDatabase = {
-  b6UTxQ: {
-    longURL: "https://www.tsn.ca",
-    userID: "aJ48lW",
-  },
-  i3BoGr: {
-    longURL: "https://www.google.ca",
-    userID: "aJ48lW",
-  },
-  b2xVn2: {
-    longURL: "http://www.lighthouselabs.ca",
-    userID: "tJ45ls",
-  },
-  '9sm5xK': {
-    longURL: "http://www.google.com",
-    userID: "tJ45ls",
-  },
+let urlDatabase = {};
+
+//Initialzing Database Part 2
+//We need to read our urls from our Url database saved in a text file
+let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+});
+
+if (data.length !== 0) { // Checks if there is no data
+  let parsedData = JSON.parse(data);
+  urlDatabase = {...parsedData};
+}
+
+let data1 = fs.readFileSync('./savedUsers.txt', 'utf8', (err) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
+});
+
+if (data1.length !== 0) { // Checks if there is no data
+  let parsedData = JSON.parse(data1);
+  users = {...parsedData};
+}
+
+//Initializing URL Database Part 3
+//For testing purposes we need to add these links every server startup
+urlDatabase['b6UTxQ'] = {
+  longURL: "https://www.tsn.ca",
+  userID: "aJ48lW",
+};
+
+urlDatabase['i3BoGr'] = {
+  longURL: "https://www.google.ca",
+  userID: "aJ48lW",
+};
+
+urlDatabase['b2xVn2'] = {
+  longURL: "http://www.lighthouselabs.ca",
+  userID: "tJ45ls",
+};
+
+urlDatabase['9sm5xK'] = {
+  longURL: "http://www.google.com",
+  userID: "tJ45ls",
 };
 
 // Initializing USER dataBase
-const users = {
+let users = {
   aJ48lW: {
     id: "aJ48lW",
     email: "user@example.com",
@@ -52,37 +91,6 @@ const users = {
     password: "1234",
   },
 };
-
-// This function returns our familiar dataObject we are used to!
-const urlsForUser = function(userID) {
-  let dataObject = {};
-  for (const shortUrls in urlDatabase) {
-    if (userID === urlDatabase[shortUrls].userID) {
-      dataObject[shortUrls] = urlDatabase[shortUrls].longURL;
-    }
-  }
-  return dataObject;
-};
-
-/////////////////////////////////////////////////////////////////////
-//////////MAJOR DATABASE REFACTORING/////////////////////////////////
-//Initialzing Database Part 2
-//We need to read our urls from our Url database saved in a text file
-// let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err) => {
-//   if (err) {
-//     console.error(err);
-//     return;
-//   }
-// });
-// let parsedData = JSON.parse(data);
-// urlDatabase = {...parsedData};
-
-// Initialzing Database part 3
-// For testing purposes we need to add these links every server startup
-// urlDatabase["b2xVn2"] = "http://www.lighthouselabs.ca";
-// urlDatabase["9sm5xK"] = "http://www.google.com";
-// urlDatabase["FAen9V"] = "http://www.youtube.com";
-
 
 
 //////////////////////////////////////////////////////
@@ -99,23 +107,17 @@ app.get("/hello", (req, res) => {
 
 //Sends urls as a Json object
 app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
+  appSecurity(req, users, (userID) => {
+    res.json(urlsForUser(userID, urlDatabase));
+  }, () => {
+    res.send('Please login');
+  });
 });
 
-// This security will help reduce repetition of code.
-const appSecurity = function(req, callback, callback2) {
-  let userID = req.cookies["user_id"];
-  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
-    callback(userID);
-  } else {
-    callback2();
-  }
-};
-
 app.get("/urls", (req, res) => {
-  appSecurity(req, (userID) => {
+  appSecurity(req, users, (userID) => {
     const templateVars  = {
-      urls: urlsForUser(userID),
+      urls: urlsForUser(userID, urlDatabase),
       userID: users[userID]
     };
     res.render("urls_index", templateVars);
@@ -127,9 +129,9 @@ app.get("/urls", (req, res) => {
 
 
 app.get("/urls/new", (req, res) => {
-  appSecurity(req, (userID) => {
+  appSecurity(req, users, (userID) => {
     const templateVars  = {
-      urls: urlsForUser(userID),
+      urls: urlsForUser(userID, urlDatabase),
       userID: users[userID]
     };
     res.render("urls_new", templateVars);
@@ -139,7 +141,7 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.post("/urls/:id/edit", (req, res) => {
-  appSecurity(req, () => {
+  appSecurity(req, users, () => {
     if (urlDatabase[req.params.id]) {
       urlDatabase[req.params.id].longURL = req.body['longURL'];
       res.redirect(302, `/urls`);
@@ -149,13 +151,12 @@ app.post("/urls/:id/edit", (req, res) => {
   }, () => {
     res.send('Please login/register to access the edit page'); // No need for HTML
   });
-  // updating the save file with all our urls
-  // writeToFileDatabase(urlDatabase);
+  writeToFileDatabase(urlDatabase); //updating the save file with all our urls
 });
 
 // adding a delete button and handling the POST request
 app.post("/urls/:id/delete", (req, res) => {
-  appSecurity(req, () => {
+  appSecurity(req, users, () => {
     if (urlDatabase[req.params.id]) {
       delete urlDatabase[req.params.id];
       res.redirect(302, `/urls`);
@@ -165,15 +166,14 @@ app.post("/urls/:id/delete", (req, res) => {
   }, () => {
     res.send('Please login/register to access the delete page'); // No need fo HTML
   });
-  // The following code will update our saved text file url database
-  //writeToFileDatabase(urlDatabase);
+  writeToFileDatabase(urlDatabase); //updating the save file with all our urls
 });
 
 app.get("/urls/:id", (req, res) => {
-  appSecurity(req, (userID) => {
+  appSecurity(req, users, (userID) => {
     const templateVars = {
       id: req.params.id,
-      longURL: urlsForUser(userID)[req.params.id],
+      longURL: urlsForUser(userID, urlDatabase)[req.params.id],
       userID: users[userID]
     };
     if (urlDatabase[req.params.id] === undefined) {
@@ -192,7 +192,7 @@ app.get("/urls/:id", (req, res) => {
 // creates new links
 app.post("/urls", (req, res) => {
   
-  appSecurity(req, (userID) => {
+  appSecurity(req, users, (userID) => {
     // generating url ID
     let shortString = generateRandomString();
     // Adding new url element to url database
@@ -202,7 +202,7 @@ app.post("/urls", (req, res) => {
     };
     urlDatabase[shortString] = urlObject;
     
-    //writeToFileDatabase(urlDatabase); // Writing to database
+    writeToFileDatabase(urlDatabase); // Writing to database
     res.redirect(302, `/urls/${shortString}`);
   }, () => {
     res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
@@ -220,7 +220,7 @@ app.get("/u/:id", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  appSecurity(req, () => {
+  appSecurity(req, users, () => {
     res.redirect(302, '/urls');
   }, () => {
     res.render("login");
@@ -232,7 +232,7 @@ app.post("/login", (req, res) => {
   if (userID !== undefined && req.body.password === users[userID].password) {
     res.cookie("user_id", userID);
   }
-  appSecurity(req, () => {
+  appSecurity(req, users, () => {
     res.redirect(302, "/urls");
   }, () => {
     res.redirect(302, "login");
@@ -245,7 +245,7 @@ app.post("/logout", (req,res) => {
 });
 
 app.get("/register", (req, res) => {
-  appSecurity(req, () => {
+  appSecurity(req, users, () => {
     res.redirect(302, '/urls');
   }, () => {
     const templateVars  = {
@@ -270,6 +270,7 @@ app.post("/register", (req,res) => {
       };
       users[userID] = newUser;
       res.cookie("user_id", userID);
+      writeToUsersDatabase(users);
       res.redirect(302, "/urls");
     } else {
       res.cookie("InvalidAccountInfo", "true");
@@ -283,47 +284,3 @@ app.post("/register", (req,res) => {
   }
 
 });
-
-
-//Checking if the user email already exists in the users object
-const getUserByEmail = function(userEmail, users) {
-  for (const userIDs in users) {
-    if (users[userIDs].email === userEmail) {
-      return userIDs;
-    }
-  }
-  return undefined;
-};
-
-// const writeToFileDatabase = function(urls) {
-//   let urlDatabaseJSON = JSON.stringify(urls);
-//   // Saving the new urlDatabase object into the text file
-//   fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
-//     if (err) {
-//       console.error(err);
-//     }
-//     // file written successfully
-//   });
-// };
-
-// Generate 6 random alphanumeric characters as a single string
-const generateRandomString = function() {
-  let randomNumbers = [];
-  for (let i = 0; i < 6; i++) {
-    // Generating numbers that will represent
-    //10 digits, 26 lower case and 26 captial letters
-    randomNumbers.push(Math.floor(Math.random() * 62));
-  }
-  //String.fromCharCode(65)
-  let stringRes = randomNumbers.map((num) => {
-    if (num < 10) {
-      return num;
-    } else if (num > 9 && num < 36) {
-      return String.fromCharCode(num + 55);
-    } else if (num > 35) {
-      return String.fromCharCode(num + 61);
-    }
-  }).join('');
-
-  return stringRes;
-};
