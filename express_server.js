@@ -54,7 +54,7 @@ const users = {
 };
 
 // This function returns our familiar dataObject we are used to!
-const getUrls = function(userID) {
+const urlsForUser = function(userID) {
   let dataObject = {};
   for (const shortUrls in urlDatabase) {
     if (userID === urlDatabase[shortUrls].userID) {
@@ -106,14 +106,14 @@ app.get("/urls.json", (req, res) => {
 app.get("/urls", (req, res) => {
   let userID = req.cookies["user_id"];
   const templateVars  = {
-    urls: getUrls(userID),
+    urls: urlsForUser(userID),
     userID: users[userID]
   };
   if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
     res.render("urls_index", templateVars);
   } else {
 
-    res.send('<html><body><a href="/login"">Please login/register to access this page</a></body></html>\n');
+    res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
   }
   
 });
@@ -123,7 +123,7 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   let userID = req.cookies["user_id"];
   const templateVars  = {
-    urls: getUrls(userID),
+    urls: urlsForUser(userID),
     userID: users[userID]
   };
   if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
@@ -137,31 +137,44 @@ app.get("/urls/new", (req, res) => {
 app.post("/urls/:id/edit", (req, res) => {
   let userID = req.cookies["user_id"];
   if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
-    urlDatabase[req.params.id].longURL = req.body['longURL'];
+    if (urlDatabase[req.params.id]) {
+      urlDatabase[req.params.id].longURL = req.body['longURL'];
+      res.redirect(302, `/urls`);
+    } else {
+      res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n'); 
+    }
+  } else {
+    res.send('Please login/register to access the edit page'); // No need for HTML
   }
   // updating the save file with all our urls
   // writeToFileDatabase(urlDatabase);
-  res.redirect(302, `/urls`);
 });
 
 // adding a delete button and handling the POST request
 app.post("/urls/:id/delete", (req, res) => {
   let userID = req.cookies["user_id"];
   if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
-    delete urlDatabase[req.params.id];
+    if (urlDatabase[req.params.id]) {
+      delete urlDatabase[req.params.id];
+      res.redirect(302, `/urls`);
+    } else {
+      res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n'); 
+    }
+  } else {
+    res.send('Please login/register to access the delete page'); // No need fo HTML
   }
   
   // The following code will update our saved text file url database
   //writeToFileDatabase(urlDatabase);
 
-  res.redirect(302, `/urls`);
+  
 });
 
 app.get("/urls/:id", (req, res) => {
   let userID = req.cookies["user_id"];
   const templateVars = {
     id: req.params.id,
-    longURL: getUrls(userID)[req.params.id],
+    longURL: urlsForUser(userID)[req.params.id],
     userID: users[userID]
   };
   if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
@@ -173,7 +186,7 @@ app.get("/urls/:id", (req, res) => {
       res.render("urls_show", templateVars);
     }
   } else {
-    res.send('<html><body><a href="/login"">Please login/register to access this page</a></body></html>\n');
+    res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
   }
   
 });
@@ -195,7 +208,7 @@ app.post("/urls", (req, res) => {
     //writeToFileDatabase(urlDatabase);
     res.redirect(302, `/urls/${shortString}`); // Redirects the link
   } else {
-    res.send('<html><body><a href="/login"">Please login/register to access this page</a></body></html>\n');
+    res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
     //res.redirect(302, '/urls');
   }
 });
