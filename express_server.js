@@ -2,11 +2,23 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 //const fs = require('fs');
+//Imported functions;
+
 // Starting the server and initializing the PORT
 const app = express();
 const PORT = 8080; // default port 8080
 
-// Initialzing Database
+//Middleware
+app.set("view engine", "ejs");
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+//Listener
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}`);
+});
+
+// Initialzing URL Database
 const urlDatabase = {
   b6UTxQ: {
     longURL: "https://www.tsn.ca",
@@ -16,8 +28,31 @@ const urlDatabase = {
     longURL: "https://www.google.ca",
     userID: "aJ48lW",
   },
+  b2xVn2: {
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "tJ45ls",
+  },
+  '9sm5xK': {
+    longURL: "http://www.google.com",
+    userID: "tJ45ls",
+  },
 };
 
+// Initializing USER dataBase
+const users = {
+  aJ48lW: {
+    id: "aJ48lW",
+    email: "user@example.com",
+    password: "1234",
+  },
+  tJ45ls: {
+    id: "tJ45ls",
+    email: "user2@example.com",
+    password: "1234",
+  },
+};
+
+// This function returns our familiar dataObject we are used to!
 const getUrls = function(userID) {
   let dataObject = {};
   for (const shortUrls in urlDatabase) {
@@ -47,28 +82,18 @@ const getUrls = function(userID) {
 // urlDatabase["9sm5xK"] = "http://www.google.com";
 // urlDatabase["FAen9V"] = "http://www.youtube.com";
 
-//Middleware
-app.set("view engine", "ejs");
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
-// Initializing user dataBase
-// Future: add a text file to store this object as a JSON object
-const users = {
-  aJ48lW: {
-    id: "aJ48lW",
-    email: "user@example.com",
-    password: "1234",
-  },
-};
 
-//Listener
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}`);
-});
+//////////////////////////////////////////////////////
+// GROUP UP ANTIQUATED CODE /////////////////////////
+/////////////////////////////////////////////////////
 
 app.get("/", (req, res) => {
   res.send("Hello!");
+});
+
+app.get("/hello", (req, res) => {
+  res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
 
@@ -80,20 +105,18 @@ app.get("/", (req, res) => {
 app.get("/urls", (req, res) => {
   let userID = req.cookies["user_id"];
   const templateVars  = {
-    urls: urlDatabase,
+    urls: getUrls(userID),
     userID: users[userID]
   };
   res.render("urls_index", templateVars);
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
+
 
 app.get("/urls/new", (req, res) => {
   let userID = req.cookies["user_id"];
   const templateVars  = {
-    urls: urlDatabase,
+    urls: getUrls(userID),
     userID: users[userID]
   };
   if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
@@ -105,21 +128,24 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.post("/urls/:id/edit", (req, res) => {
-  urlDatabase[req.params.id] = req.body['longURL'];
-  
+  let userID = req.cookies["user_id"];
+  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+    urlDatabase[req.params.id].longURL = req.body['longURL'];
+  }
   // updating the save file with all our urls
-  writeToFileDatabase(urlDatabase);
-
+  // writeToFileDatabase(urlDatabase);
   res.redirect(302, `/urls`);
 });
 
 // adding a delete button and handling the POST request
 app.post("/urls/:id/delete", (req, res) => {
-  // Deleting a url
-  delete urlDatabase[req.params.id];
-
+  let userID = req.cookies["user_id"];
+  if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
+    delete urlDatabase[req.params.id];
+  }
+  
   // The following code will update our saved text file url database
-  writeToFileDatabase(urlDatabase);
+  //writeToFileDatabase(urlDatabase);
 
   res.redirect(302, `/urls`);
 });
@@ -128,7 +154,7 @@ app.get("/urls/:id", (req, res) => {
   let userID = req.cookies["user_id"];
   const templateVars = {
     id: req.params.id,
-    longURL: urlDatabase[req.params.id],
+    longURL: getUrls(userID)[req.params.id],
     userID: users[userID]
   };
   if (urlDatabase[req.params.id] === undefined) {
@@ -146,20 +172,23 @@ app.post("/urls", (req, res) => {
     // generating url ID
     let shortString = generateRandomString();
     // Adding new url element to url database
-    urlDatabase[shortString] = req.body['longURL'];
+    let urlObject = {
+      longURL: req.body['longURL'],
+      userID
+    };
+    urlDatabase[shortString] = urlObject;
     // Writing to database
-    writeToFileDatabase(urlDatabase);
+    //writeToFileDatabase(urlDatabase);
     res.redirect(302, `/urls/${shortString}`); // Redirects the link
   } else {
     res.send('Please login for access to this functionality');
     //res.redirect(302, '/urls');
   }
-   
 });
 
 // Redirects to external websites using the longURL
 app.get("/u/:id", (req, res) => {
-  const longURL = urlDatabase[req.params.id];
+  const longURL = urlDatabase[req.params.id].longURL;
   if (longURL === undefined) {
     res.redirect(400);
   } else {
@@ -250,16 +279,16 @@ const getUserByEmail = function(userEmail, users) {
   return undefined;
 };
 
-const writeToFileDatabase = function(urls) {
-  let urlDatabaseJSON = JSON.stringify(urls);
-  // Saving the new urlDatabase object into the text file
-  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
-    if (err) {
-      console.error(err);
-    }
-    // file written successfully
-  });
-};
+// const writeToFileDatabase = function(urls) {
+//   let urlDatabaseJSON = JSON.stringify(urls);
+//   // Saving the new urlDatabase object into the text file
+//   fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
+//     if (err) {
+//       console.error(err);
+//     }
+//     // file written successfully
+//   });
+// };
 
 // Generate 6 random alphanumeric characters as a single string
 const generateRandomString = function() {
