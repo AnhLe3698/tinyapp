@@ -224,7 +224,7 @@ app.get("/login", (req, res) => {
     res.redirect(302, '/urls');
   }, () => {
     res.render("login");
-  })l
+  });
 });
 
 app.post("/login", (req, res) => {
@@ -250,7 +250,7 @@ app.get("/register", (req, res) => {
       InvalidAccountInfo: req.cookies["InvalidAccountInfo"]
     };
     res.render("register", templateVars);
-  })
+  });
 });
 
 app.post("/register", (req,res) => {
