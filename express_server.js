@@ -4,7 +4,7 @@ let cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 
-//Imported functions;
+//Imported HELPER functions;
 let {
   getUserByEmail,
   urlsForUser,
@@ -12,7 +12,7 @@ let {
   generateRandomString,
   writeToFileDatabase,
   writeToUsersDatabase
-} = require('./functions');
+} = require('./helpers');
 
 // Starting the server and initializing the PORT
 const app = express();
