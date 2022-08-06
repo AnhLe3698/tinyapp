@@ -1,8 +1,7 @@
 // Adding our dependencies
 const express = require('express');
-const cookieParser = require('cookie-parser');
+let cookieSession = require('cookie-session');
 const bcrypt = require('bcryptjs');
-
 const fs = require('fs');
 
 //Imported functions;
@@ -22,7 +21,10 @@ const PORT = 8080; // default port 8080
 //Middleware
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(cookieSession({ // Session Security
+  name: 'session',
+  keys: ['COOKIEMONSTER'],
+}));
 
 //Listener
 app.listen(PORT, () => {
@@ -233,7 +235,7 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   let userID = getUserByEmail(req.body.email, users);
   if (userID !== undefined &&  bcrypt.compareSync(req.body.password, users[userID].password)) {
-    res.cookie("user_id", userID);
+    req.session.userid = userID;
   }
   appSecurity(req, users, () => {
     res.redirect(302, "/urls");
@@ -243,7 +245,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req,res) => {
-  res.clearCookie("user_id", req.body["buttonInput"]);
+  req.session = null;
   res.redirect(302, "/login");
 });
 
@@ -251,10 +253,7 @@ app.get("/register", (req, res) => {
   appSecurity(req, users, () => {
     res.redirect(302, '/urls');
   }, () => {
-    const templateVars  = {
-      InvalidAccountInfo: req.cookies["InvalidAccountInfo"]
-    };
-    res.render("register", templateVars);
+    res.render("register");
   });
 });
 
@@ -264,7 +263,6 @@ app.post("/register", (req,res) => {
   let checkDuplicateEmail = getUserByEmail(req.body.email, users);
   if (req.body.email !== undefined && req.body.email !== "") {
     if (checkDuplicateEmail === undefined && req.body.password !== undefined && req.body.password !== "") {
-      res.clearCookie("InvalidAccountInfo", true);
       let userID = generateRandomString();
       let newUser = {
         id: userID,
@@ -272,17 +270,13 @@ app.post("/register", (req,res) => {
         password: bcrypt.hashSync(req.body.password, 10)
       };
       users[userID] = newUser;
-      res.cookie("user_id", userID);
+      req.session.userid = userID;
       writeToUsersDatabase(users);
       res.redirect(302, "/urls");
     } else {
-      res.cookie("InvalidAccountInfo", "true");
       res.redirect(400, "/register");
     }
   } else {
-  // The following cookie is used to pass a message if
-  // invalid registration information is passed
-    res.cookie("InvalidAccountInfo", "true");
     res.redirect(400, "/register");
   }
 });

@@ -56,7 +56,7 @@ const generateRandomString = function() {
 
 // This security will help reduce repetition of code.
 const appSecurity = function(req, users, callback, callback2) {
-  let userID = req.cookies["user_id"];
+  let userID = req.session.userid;
   if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
     callback(userID);
   } else {
