@@ -1,6 +1,8 @@
 // Adding our dependencies
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
+
 const fs = require('fs');
 
 //Imported functions;
@@ -85,14 +87,13 @@ urlDatabase['9sm5xK'] = {
 users['aJ48lW'] = {
   id: "aJ48lW",
   email: "user@example.com",
-  password: "1234"
+  password: bcrypt.hashSync('1234', 10)
 };
 users['tJ45ls'] = {
   id: "tJ45ls",
   email: "user2@example.com",
-  password: "1234"
+  password: bcrypt.hashSync('1234', 10)
 };
-
 
 
 //////////////////////////////////////////////////////
@@ -231,7 +232,7 @@ app.get("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   let userID = getUserByEmail(req.body.email, users);
-  if (userID !== undefined && req.body.password === users[userID].password) {
+  if (userID !== undefined &&  bcrypt.compareSync(req.body.password, users[userID].password)) {
     res.cookie("user_id", userID);
   }
   appSecurity(req, users, () => {
@@ -268,7 +269,7 @@ app.post("/register", (req,res) => {
       let newUser = {
         id: userID,
         email: req.body.email,
-        password: req.body.password
+        password: bcrypt.hashSync(req.body.password, 10)
       };
       users[userID] = newUser;
       res.cookie("user_id", userID);
