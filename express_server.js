@@ -1,8 +1,9 @@
 // Adding our dependencies
-const express = require('express');
-let cookieSession = require('cookie-session');
-const bcrypt = require('bcryptjs');
-const fs = require('fs');
+const express = require('express'); // HTTP request library
+let cookieSession = require('cookie-session'); // Encrypted cookies
+const bcrypt = require('bcryptjs'); // Hashed Passwords
+const methodOverride = require('method-override'); // "Adds" PUT and Delete requests
+const fs = require('fs'); // Reading Database from files
 
 //Imported HELPER functions;
 let {
@@ -19,8 +20,9 @@ const app = express();
 const PORT = 8080; // default port 8080
 
 //Middleware
-app.set("view engine", "ejs");
-app.use(express.urlencoded({ extended: true }));
+app.set("view engine", "ejs"); // Serverside Rendering
+app.use(express.urlencoded({ extended: true })); // UTF8 encoding
+app.use(methodOverride('_method')); // override with POST and ?_method=DELETE in form
 app.use(cookieSession({ // Session Security
   name: 'session',
   keys: ['COOKIEMONSTER'],
@@ -119,6 +121,7 @@ app.get("/urls.json", (req, res) => {
   });
 });
 
+
 app.get("/urls", (req, res) => {
   appSecurity(req, users, (userID) => {
     const templateVars  = {
@@ -130,7 +133,6 @@ app.get("/urls", (req, res) => {
     res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
   });
 });
-
 
 
 app.get("/urls/new", (req, res) => {
@@ -145,7 +147,8 @@ app.get("/urls/new", (req, res) => {
   });
 });
 
-app.post("/urls/:id/edit", (req, res) => {
+// PUT requests update existing resources
+app.put("/urls/:id/edit", (req, res) => {
   appSecurity(req, users, () => {
     if (urlDatabase[req.params.id]) {
       urlDatabase[req.params.id].longURL = req.body['longURL'];
@@ -159,8 +162,8 @@ app.post("/urls/:id/edit", (req, res) => {
   writeToFileDatabase(urlDatabase); //updating the save file with all our urls
 });
 
-// adding a delete button and handling the POST request
-app.post("/urls/:id/delete", (req, res) => {
+// Adding a delete button and handling the POST request using Method Overide
+app.delete("/urls/:id", (req, res) => {
   appSecurity(req, users, () => {
     if (urlDatabase[req.params.id]) {
       delete urlDatabase[req.params.id];
@@ -194,7 +197,7 @@ app.get("/urls/:id", (req, res) => {
   
 });
 
-// creates new links
+// creates new links, POST method creates new resource
 app.post("/urls", (req, res) => {
   
   appSecurity(req, users, (userID) => {
@@ -249,6 +252,7 @@ app.post("/logout", (req,res) => {
   res.redirect(302, "/login");
 });
 
+// Redirects to register page if not logged in
 app.get("/register", (req, res) => {
   appSecurity(req, users, () => {
     res.redirect(302, '/urls');
@@ -257,21 +261,22 @@ app.get("/register", (req, res) => {
   });
 });
 
+// Registers account
 app.post("/register", (req,res) => {
   // The following variable will check if an email exists
   // If getUserByEmail cannot locate email, it will return undefined
   let checkDuplicateEmail = getUserByEmail(req.body.email, users);
   if (req.body.email !== undefined && req.body.email !== "") {
     if (checkDuplicateEmail === undefined && req.body.password !== undefined && req.body.password !== "") {
-      let userID = generateRandomString();
-      let newUser = {
+      let userID = generateRandomString(); // UserID
+      let newUser = { // User settings
         id: userID,
         email: req.body.email,
-        password: bcrypt.hashSync(req.body.password, 10)
+        password: bcrypt.hashSync(req.body.password, 10) //Encypt userID
       };
       users[userID] = newUser;
       req.session.userid = userID;
-      writeToUsersDatabase(users);
+      writeToUsersDatabase(users); // adds account to user database
       res.redirect(302, "/urls");
     } else {
       res.redirect(400, "/register");
