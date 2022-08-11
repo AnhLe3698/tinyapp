@@ -177,7 +177,14 @@ app.delete("/urls/:id", (req, res) => {
   writeToFileDatabase(urlDatabase); //updating the save file with all our urls
 });
 
-app.get("/urls/:id", (req, res) => {
+// Need to add the following features: Unique visitors, Total Visitors, Visits {Timestamp, trackingID}
+// Clicking on a URL adds to a Vistor_object {url:{userID, time,trackingID}, url:{userID,time,trackingID}}
+// Feature A) Total clicks, for (urls in Visitor_object) if (urls === short_url) counter ++
+// Feature B) unique visitors will return a counted result from looping through
+// Object for unique visitors to a short URL (urls in Visitor_object) if (urls === short_url) a.push(userID)
+// for loop through the users array to check and then increment counter if unique.
+// Feature C) scan through document and display User's visits
+app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
   appSecurity(req, users, (userID) => {
     const templateVars = {
       id: req.params.id,
