@@ -69,16 +69,26 @@ _users['tJ45ls'] = {
 
 // STRETCH: Feature 0) Url visit history Object/Database
 let _urlVisits = {
-  lPiGRA: {
-    userID: 'BaZg4f',
-    time: 1660268400,
-    shortUrl: 'lPiGRa',
-    "longURL":"http://www.youtube.com"
-  }
+  // lPiGRA: {
+  //   userID: 'BaZg4f',
+  //   time: 1660268400,
+  //   shortUrl: 'lPiGRa',
+  //   "longURL":"http://www.youtube.com"
+  // }
+};
+
+// Error messages and redirect messages
+let errorMessages = {
+  reject1: '<html><body><a href="/urls"">This short URL does not belong to you</a></body></html>\n',
+  pleaseLogin: '<html><body><a href="/login">Please login/register to access this page</a></body></html>\n',
+  invalidURL: "<html><body>The short url is not a valid ID</body></html>\n",
+  invalidURL2: '<html><body><a href="/urls">URL does not exist</a></body></html>\n',
+  loginForAccess: 'Please login/register to access the page'
 };
 
 module.exports = {
   _urlVisits,
   _urlDatabase,
-  _users
+  _users,
+  errorMessages
 };

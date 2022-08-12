@@ -54,7 +54,7 @@ const generateRandomString = function() {
   return stringRes;
 };
 
-// This security will help reduce repetition of code.
+// Checks if the user is logged in and executes the correct callback function
 const appSecurity = function(req, users, callback, callback2) {
   let userID = req.session.userid;
   if (userID !== undefined && users[userID] !== undefined && users[userID].id === userID) {
@@ -74,6 +74,13 @@ const urlsForUser = function(userID, urlDatabase) {
   }
   return dataObject;
 };
+
+// STRETCH: Unique visitors, Total Visitors, Visits {Timestamp, trackingID}
+// Feature 0) Clicking on a URL adds to a Vistor_object {trkID:{userID, time,url}, trkID:{userID,time, url}}
+// Feature A) Total views from accessing either the GET /u/:id or GET /urls/:id pages
+// Feature B) Count Unique Viewers that access the url or edit page GET /u/:id or GET /urls/:id
+// Feature B) Also assign a cookie to track an unregistered user who accesses /u/id
+// Feature C) Scan through urlVisits Database and display User's visits HISTORY
 
 //Stretch: Feature A Total Visits, increment from accessing GET "/urls/:id" and GET "/u/:id"
 const totalVisits = function(urlVisits, shortUrl) {
@@ -100,7 +107,7 @@ const cookieViews = function(req, urlDatabase, urlVisits) {
   return counter;
 };
 
-// STRETCH: Feature C History of User visits to shortURL
+// STRETCH: Feature C: History of User visits to shortURL
 const urlHistory = function(req, urlVisits) {
   let visitHistory = {};
   for (const visits in urlVisits) {
@@ -109,6 +116,20 @@ const urlHistory = function(req, urlVisits) {
     }
   }
   return visitHistory;
+};
+
+// STRETCH: Feature C: Converts Unix Time to current time
+const timeConverter = function(unixTime) {
+  let a = new Date(unixTime);
+  let months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let year = a.getFullYear();
+  let month = months[a.getMonth()];
+  let date = a.getDate();
+  let hour = a.getHours();
+  let min = a.getMinutes();
+  let sec = a.getSeconds();
+  let time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+  return time;
 };
 
 
@@ -121,5 +142,6 @@ module.exports = {
   writeToUsersDatabase,
   totalVisits,
   urlHistory,
-  cookieViews
+  cookieViews,
+  timeConverter
 };

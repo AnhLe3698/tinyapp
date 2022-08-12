@@ -9,20 +9,22 @@ const methodOverride = require('method-override'); // "Adds" PUT and Delete requ
 let {
   getUserByEmail,
   urlsForUser,
-  appSecurity,
-  generateRandomString,
-  writeToFileDatabase,
-  writeToUsersDatabase,
+  appSecurity, // <------Crucial function for checking if user is logged in
+  generateRandomString, // <-------Generates shortUrls, UserIDs, and TrackingIDs
+  writeToFileDatabase, // <------- Records our urls in a text file
+  writeToUsersDatabase, // <------ Records our users in a text file (Hashed Passwords)
   totalVisits, // Stretch Feature A
   urlHistory, // Stretch Feature C
-  cookieViews // Stretch Feature B
+  cookieViews, // Stretch Feature B
+  timeConverter, // Stretch Feature C
 } = require('./helpers');
 
 // Imprted Databases
 let {
   _urlVisits,
   _urlDatabase,
-  _users
+  _users,
+  errorMessages
 } = require('./databases');
 
 // Starting the server and initializing the PORT
@@ -33,12 +35,11 @@ const PORT = 8080; // default port 8080
 app.set("view engine", "ejs"); // Serverside Rendering
 app.use(cookiesState()); // Helps with statefulness
 app.use(express.urlencoded({ extended: true })); // UTF8 encoding
-app.use(methodOverride('_method')); // override with POST and ?_method=DELETE in form
+app.use(methodOverride('_method')); // Override with POST and ?_method=DELETE in form
 app.use(cookieSession({ // Session Security
   name: 'session',
   keys: ['COOKIEMONSTER'],
 }));
-
 
 //Listener
 app.listen(PORT, () => {
@@ -49,16 +50,14 @@ app.listen(PORT, () => {
 let urlDatabase = {..._urlDatabase};
 
 // Initialzing User Database read from file
-let users = {..._users};
 // user@example.com Pass: 1234 user2@example.com Pass: 1234
+let users = {..._users};
 
 // Stretch - adding urlVisits Obect/Database
 let urlVisits = {..._urlVisits};
 
-
-
 //////////////////////////////////////////////////////
-// GROUP UP ANTIQUATED CODE /////////////////////////
+/// HTTP PATHS using EXPRESS /////////////////////////
 /////////////////////////////////////////////////////
 
 app.get("/", (req, res) => {
@@ -68,7 +67,7 @@ app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
 
-//Sends urls as a Json object
+// Sends urls as a Json object
 app.get("/urls.json", (req, res) => {
   appSecurity(req, users, (userID) => {
     res.json(urlsForUser(userID, urlDatabase));
@@ -77,7 +76,7 @@ app.get("/urls.json", (req, res) => {
   });
 });
 
-
+// Main urls_index page
 app.get("/urls", (req, res) => {
   appSecurity(req, users, (userID) => {
     const templateVars  = {
@@ -86,11 +85,29 @@ app.get("/urls", (req, res) => {
     };
     res.render("urls_index", templateVars);
   }, () => {
-    res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
+    res.send(errorMessages['pleaseLogin']);
   });
 });
 
+// creates new links, POST method creates new resource
+app.post("/urls", (req, res) => {
+  appSecurity(req, users, (userID) => {
+    // generating url ID
+    let shortString = generateRandomString();
+    // Adding new url element to url database
+    let urlObject = {
+      longURL: req.body['longURL'],
+      userID
+    };
+    urlDatabase[shortString] = urlObject; // Adds url
+    writeToFileDatabase(urlDatabase); // Writing Urls to database
+    res.redirect(302, `/urls/${shortString}`);
+  }, () => {
+    res.send(errorMessages['pleaseLogin']);
+  });
+});
 
+// Allows access to add new URLs if logged in
 app.get("/urls/new", (req, res) => {
   appSecurity(req, users, (userID) => {
     const templateVars  = {
@@ -110,54 +127,48 @@ app.put("/urls/:id/edit", (req, res) => {
       urlDatabase[req.params.id].longURL = req.body['longURL'];
       res.redirect(302, `/urls`);
     } else {
-      res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n');
+      res.send(errorMessages['invalidURL2']);
     }
   }, () => {
-    res.send('Please login/register to access the EDIT page'); // No need for HTML
+    res.send(errorMessages['loginForAccess']);
   });
-  writeToFileDatabase(urlDatabase); //updating the save file with all our urls
+  //updating the save file with all our urls
+  writeToFileDatabase(urlDatabase);
 });
 
-// Adding a delete button and handling the POST request using Method Overide
+// Adding Method Overide to allow for Delete requests
 app.delete("/urls/:id", (req, res) => {
   appSecurity(req, users, () => {
     if (urlDatabase[req.params.id]) {
       delete urlDatabase[req.params.id];
       res.redirect(302, `/urls`);
     } else {
-      res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n');
+      res.send(errorMessages['invalidURL2']);
     }
   }, () => {
-    res.send('Please login/register to access the Delete page'); // No need fo HTML
+    res.send(errorMessages['loginForAccess']);
   });
-  writeToFileDatabase(urlDatabase); //updating the save file with all our urls
+  //updating the save file with all our urls
+  writeToFileDatabase(urlDatabase);
 });
-
-// STRETCH: Need to add the following features: Unique visitors, Total Visitors, Visits {Timestamp, trackingID}
-// Feature 0) Clicking on a URL adds to a Vistor_object {trkID:{userID, time,url}, trkID:{userID,time, url}}
-// Feature A) Total views from accessing either the GET /u/:id or GET /urls/:id pages
-// Feature B) Count Unique Viewers that access the url or edit page GET /u/:id or GET /urls/:id
-// Feature B) Also assign a cookie to track an unregistered user who accesses /u/id
-// Feature C) Scan through urlVisits Database and display User's visits HISTORY
 
 app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
   appSecurity(req, users, (userID) => {
     if (urlDatabase[req.params.id] === undefined) {
       res.send('Invalid short url');
     } else if (urlDatabase[req.params.id]['userID'] !== userID) {
-      res.send('<html><body><a href="/urls"">This short URL does not belong to you</a></body></html>\n');
+      res.send(errorMessages['reject1']);
     } else {
 
       //STRETCH: This adds to the urlVisits Database//
       let trackingID = generateRandomString();
       urlVisits[trackingID] = {
         userID: userID,
-        time: Date.now(),
+        time: timeConverter(Date.now()),
         shortUrl: req.params.id,
         longURL: urlDatabase[req.params.id]['longURL']
-      };
-      // Stretch END//
-
+      }; // Stretch END//
+      
       const templateVars = {
         id: req.params.id,
         longURL: urlsForUser(userID, urlDatabase)[req.params.id],
@@ -169,39 +180,18 @@ app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
       res.render("urls_show", templateVars);
     }
   }, () => {
-    res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
+    res.send(errorMessages['pleaseLogin']);
   });
 });
 
-// creates new links, POST method creates new resource
-app.post("/urls", (req, res) => {
-  
-  appSecurity(req, users, (userID) => {
-    // generating url ID
-    let shortString = generateRandomString();
-    // Adding new url element to url database
-    let urlObject = {
-      longURL: req.body['longURL'],
-      userID
-    };
-    urlDatabase[shortString] = urlObject;
-    writeToFileDatabase(urlDatabase); // Writing Urls to database
-    res.redirect(302, `/urls/${shortString}`);
-  }, () => {
-    res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
-  });
-});
+
 
 // Redirects to external websites using the longURL
-// Stretch: Accessing a link or accessing the Edit page ("/urls/:id")
-// records a session that the short url and the long url was accessed!
 app.get("/u/:id", (req, res) => { // Tracks if users visits website
   const urlObject = urlDatabase[req.params.id];
   if (urlObject === undefined) {
-    res.send("<html><body>The short url is not a valid ID</body></html>\n");
+    res.send(errorMessages['invalidURL']);
   } else {
-    
-
     ////// Stetch /////////////
     // The following lines of code tracks logged in users and random users
     // who access a short url and adds it to the urlVisits object/database
@@ -211,18 +201,17 @@ app.get("/u/:id", (req, res) => { // Tracks if users visits website
       userID = req.session.userid;
     } else if (req.session.userid === undefined && req.cookies['Random_User'] === undefined) {
       userID = generateRandomString();
-      res.cookie('Random_User', userID);
+      res.cookie('Random_User', userID); // Assigns a cookie to unregistered users
     } else if (req.cookies['Random_User'] !== undefined) {
       userID = req.cookies['Random_User'];
     }
     urlVisits[trackingID] = {
       userID: userID,
-      time: Date.now(),
+      time: timeConverter(Date.now()),
       shortUrl: req.params.id,
       longURL: urlDatabase[req.params.id]['longURL']
-    };
-    //////// Stretch END ////////////
-
+    }; //////// Stretch END ////////////////
+    
     res.redirect(302, urlObject.longURL);
   }
 });
@@ -267,21 +256,18 @@ app.post("/register", (req,res) => {
   // The following variable will check if an email exists
   // If getUserByEmail cannot locate email, it will return undefined
   let checkDuplicateEmail = getUserByEmail(req.body.email, users);
-  if (req.body.email !== undefined && req.body.email !== "") {
-    if (checkDuplicateEmail === undefined && req.body.password !== undefined && req.body.password !== "") {
-      let userID = generateRandomString(); // UserID
-      let newUser = { // User settings
-        id: userID,
-        email: req.body.email,
-        password: bcrypt.hashSync(req.body.password, 10) //Encypt userID
-      };
-      users[userID] = newUser;
-      req.session.userid = userID;
-      writeToUsersDatabase(users); // adds account to user database
-      res.redirect(302, "/urls");
-    } else {
-      res.redirect(400, "/register");
-    }
+  if (req.body.email !== undefined && req.body.email !== "" && checkDuplicateEmail === undefined
+  && req.body.password !== undefined && req.body.password !== "") {
+    let userID = generateRandomString(); // UserID
+    let newUser = { // User settings
+      id: userID,
+      email: req.body.email,
+      password: bcrypt.hashSync(req.body.password, 10) //Encypt userID
+    };
+    users[userID] = newUser;
+    req.session.userid = userID;
+    writeToUsersDatabase(users); // adds account to user database
+    res.redirect(302, "/urls");
   } else {
     res.redirect(400, "/register");
   }

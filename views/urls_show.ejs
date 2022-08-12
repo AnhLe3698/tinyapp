@@ -39,12 +39,12 @@
       <div class="card-footer text-muted"></div>
     </div>
     <!--Stretch Activities-->
-    <div>TOTAL VIEWS FOR THIS SHORT URL: <%= totalViews %></div>
-    <div>TOTAL UNIQUE VIEWS(different users) FOR LONG URL <%= uniqueViews %></div>
+    <div>TOTAL VIEWS FOR THIS SHORT URL: <span style="color: red;"><%= totalViews %> </span>   This goes up anytime the Edit Page (this page) or url is visted</div>
+    <div>TOTAL UNIQUE VIEWS(different users) FOR LONG URL: <span style="color: red"><%= uniqueViews %></span></div>
     <div>___________________________________________________</div>
     <div>History of when you visited this shortURL</div>
     <% for (let views in history) { %>
-      <div>Tracking ID: <%= views %>, UNIX Time <%= history[views] %></div>
+      <div>Tracking ID: <%= views %>, DATE & Time: <span style="color: green"><%= history[views] %></span></div>
     <% } %>
     
     <!-- Bootstrap JS -->
