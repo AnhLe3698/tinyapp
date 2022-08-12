@@ -1,8 +1,9 @@
 // Adding our dependencies
 const express = require('express'); // HTTP request library
-let cookieSession = require('cookie-session'); // Encrypted cookies
+const cookieSession = require('cookie-session'); // Encrypted cookies
 const bcrypt = require('bcryptjs'); // Hashed Passwords
 const methodOverride = require('method-override'); // "Adds" PUT and Delete requests
+const cookiesState = require('cookie-parser');
 const fs = require('fs'); // Reading Database from files
 
 //Imported HELPER functions;
@@ -27,6 +28,7 @@ app.use(cookieSession({ // Session Security
   name: 'session',
   keys: ['COOKIEMONSTER'],
 }));
+app.use(cookiesState); // Helps with statefulness
 
 //Listener
 app.listen(PORT, () => {
@@ -178,30 +180,80 @@ app.delete("/urls/:id", (req, res) => {
 });
 
 // Need to add the following features: Unique visitors, Total Visitors, Visits {Timestamp, trackingID}
-// Clicking on a URL adds to a Vistor_object {url:{userID, time,trackingID}, url:{userID,time,trackingID}}
+// Clicking on a URL adds to a Vistor_object {trkID:{userID, time,url}, trkID:{userID,time, url}}
 // Feature A) Total clicks, for (urls in Visitor_object) if (urls === short_url) counter ++
 // Feature B) unique visitors will return a counted result from looping through
 // Object for unique visitors to a short URL (urls in Visitor_object) if (urls === short_url) a.push(userID)
 // for loop through the users array to check and then increment counter if unique.
 // Feature C) scan through document and display User's visits
+let urlVists = {
+  lPiGRA: {
+    userID: 'BaZg4f',
+    time: 1660268400,
+    shortUrl: 'lPiGRa',
+    "longURL":"http://www.youtube.com"
+  }
+};
+
+// Feature C History of User visits to shortURL
+const urlVisits = function(req, urlVisits) {
+  let visitHistory = {};
+  for (const visits in urlVisits) {
+    if (urlVisits[visits]['shortUrl'] === req.params.id) {
+      visitHistory[visits] = urlVisits[visits]['time'];
+    }
+  }
+};
+
+// Feature A total visits
+const totalVisits = function(urlVisits, shortUrl) {
+  let totalVisiters = 0;
+  for (const visits in urlVisits) {
+    if (urlVisits[visits]['shortUrl'] === shortUrl) {
+      totalVisiters ++;
+    }
+  }
+  return totalVisiters;
+};
+
+// Feature B Unique Viewers
+const cookieViews = function(req, urlDatabase, urlVisits) {
+  let uniqueVisitors = {};
+  let counter = 0;
+  let longLink = urlDatabase[req.params.id].longURL;
+  for (const visits in urlVisits) {
+    if (urlVisits[visits].longURL === longLink && uniqueVisitors[urlVisits[visits]['userID']] !== undefined) {
+      uniqueVisitors[urlVisits[visits]['userID']] = 1;
+      counter ++;
+    }
+  }
+  return counter;
+};
+
 app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
   appSecurity(req, users, (userID) => {
-    const templateVars = {
-      id: req.params.id,
-      longURL: urlsForUser(userID, urlDatabase)[req.params.id],
-      userID: users[userID]
-    };
     if (urlDatabase[req.params.id] === undefined) {
       res.send('Invalid short url');
     } else if (urlDatabase[req.params.id]['userID'] !== userID) {
       res.send('<html><body><a href="/urls"">This short URL does not belong to you</a></body></html>\n');
     } else {
+      let trackingID = generateRandomString();
+      // This adds to the urlVisits Database
+      urlVists[trackingID] = {
+        userID: userID,
+        time: Date.now(),
+        shortUrl: req.params.id
+      };
+      const templateVars = {
+        id: req.params.id,
+        longURL: urlsForUser(userID, urlDatabase)[req.params.id],
+        userID: users[userID]
+      };
       res.render("urls_show", templateVars);
     }
   }, () => {
     res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
   });
-  
 });
 
 // creates new links, POST method creates new resource
@@ -255,7 +307,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req,res) => {
-  req.session = null;
+  req.session = null; // Deletes cookie
   res.redirect(302, "/login");
 });
 
