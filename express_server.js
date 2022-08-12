@@ -60,13 +60,6 @@ let urlVisits = {..._urlVisits};
 /// HTTP PATHS using EXPRESS /////////////////////////
 /////////////////////////////////////////////////////
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
-
 // Sends urls as a Json object
 app.get("/urls.json", (req, res) => {
   appSecurity(req, users, (userID) => {
