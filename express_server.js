@@ -4,9 +4,8 @@ const cookieSession = require('cookie-session'); // Encrypted cookies
 const cookiesState = require('cookie-parser'); // Used for Statefulness
 const bcrypt = require('bcryptjs'); // Hashed Passwords
 const methodOverride = require('method-override'); // "Adds" PUT and Delete requests
-const fs = require('fs'); // Reading Database from files
 
-//Imported HELPER functions;
+// Imported HELPER functions
 let {
   getUserByEmail,
   urlsForUser,
@@ -18,6 +17,13 @@ let {
   urlHistory, // Stretch Feature C
   cookieViews // Stretch Feature B
 } = require('./helpers');
+
+// Imprted Databases
+let {
+  _urlVisits,
+  _urlDatabase,
+  _users
+} = require('./databases');
 
 // Starting the server and initializing the PORT
 const app = express();
@@ -39,71 +45,16 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });
 
-// Initialzing URL Database
-let urlDatabase = {};
+// Initialzing URL Database read from file
+let urlDatabase = {..._urlDatabase};
 
-//Initialzing URL Database Part 2
-//We need to read our urls from our Url database saved in a text file
-let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
-});
-if (data.length !== 0) { // Checks if there is no data
-  let parsedData = JSON.parse(data);
-  urlDatabase = {...parsedData};
-}
+// Initialzing User Database read from file
+let users = {..._users};
+// user@example.com Pass: 1234 user2@example.com Pass: 1234
 
-// Initialzing User Database
-let users = {};
+// Stretch - adding urlVisits Obect/Database
+let urlVisits = {..._urlVisits};
 
-// Initialzing User Database Part 2
-let data1 = fs.readFileSync('./savedUsers.txt', 'utf8', (err) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
-});
-if (data1.length !== 0) { // Checks if there is no data
-  let parsedData = JSON.parse(data1);
-  users = {...parsedData};
-}
-
-//Initializing URL Database Part 3
-//For testing purposes we need to add these links every server startup
-urlDatabase['b6UTxQ'] = {
-  longURL: "https://www.tsn.ca",
-  userID: "aJ48lW",
-};
-
-urlDatabase['i3BoGr'] = {
-  longURL: "https://www.google.ca",
-  userID: "aJ48lW",
-};
-
-urlDatabase['b2xVn2'] = {
-  longURL: "http://www.lighthouselabs.ca",
-  userID: "tJ45ls",
-};
-
-urlDatabase['9sm5xK'] = {
-  longURL: "http://www.google.com",
-  userID: "tJ45ls",
-};
-
-// Initializing USER dataBase Part 3
-//For testing purposes we need to add these users every server startup
-users['aJ48lW'] = {
-  id: "aJ48lW",
-  email: "user@example.com",
-  password: bcrypt.hashSync('1234', 10)
-};
-users['tJ45ls'] = {
-  id: "tJ45ls",
-  email: "user2@example.com",
-  password: bcrypt.hashSync('1234', 10)
-};
 
 
 //////////////////////////////////////////////////////
@@ -113,7 +64,6 @@ users['tJ45ls'] = {
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
-
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
 });
@@ -163,7 +113,7 @@ app.put("/urls/:id/edit", (req, res) => {
       res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n');
     }
   }, () => {
-    res.send('Please login/register to access the edit page'); // No need for HTML
+    res.send('Please login/register to access the EDIT page'); // No need for HTML
   });
   writeToFileDatabase(urlDatabase); //updating the save file with all our urls
 });
@@ -178,7 +128,7 @@ app.delete("/urls/:id", (req, res) => {
       res.send('<html><body><a href="/urls">URL does not exist</a></body></html>\n');
     }
   }, () => {
-    res.send('Please login/register to access the delete page'); // No need fo HTML
+    res.send('Please login/register to access the Delete page'); // No need fo HTML
   });
   writeToFileDatabase(urlDatabase); //updating the save file with all our urls
 });
@@ -190,16 +140,6 @@ app.delete("/urls/:id", (req, res) => {
 // Feature B) Also assign a cookie to track an unregistered user who accesses /u/id
 // Feature C) Scan through urlVisits Database and display User's visits HISTORY
 
-// STRETCH: Feature 0) Url visit history Object/Database
-let urlVisits = {
-  lPiGRA: {
-    userID: 'BaZg4f',
-    time: 1660268400,
-    shortUrl: 'lPiGRa',
-    "longURL":"http://www.youtube.com"
-  }
-};
-
 app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
   appSecurity(req, users, (userID) => {
     if (urlDatabase[req.params.id] === undefined) {
@@ -207,8 +147,9 @@ app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
     } else if (urlDatabase[req.params.id]['userID'] !== userID) {
       res.send('<html><body><a href="/urls"">This short URL does not belong to you</a></body></html>\n');
     } else {
-      let trackingID = generateRandomString();
+
       //STRETCH: This adds to the urlVisits Database//
+      let trackingID = generateRandomString();
       urlVisits[trackingID] = {
         userID: userID,
         time: Date.now(),
@@ -216,6 +157,7 @@ app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
         longURL: urlDatabase[req.params.id]['longURL']
       };
       // Stretch END//
+
       const templateVars = {
         id: req.params.id,
         longURL: urlsForUser(userID, urlDatabase)[req.params.id],
@@ -279,7 +221,7 @@ app.get("/u/:id", (req, res) => { // Tracks if users visits website
       shortUrl: req.params.id,
       longURL: urlDatabase[req.params.id]['longURL']
     };
-    //////// Stretch ////////////
+    //////// Stretch END ////////////
 
     res.redirect(302, urlObject.longURL);
   }
@@ -307,7 +249,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req,res) => {
-  req.session = null; // Deletes cookie
+  req.session = null; // Deletes login cookie
   res.redirect(302, "/login");
 });
 
