@@ -75,11 +75,51 @@ const urlsForUser = function(userID, urlDatabase) {
   return dataObject;
 };
 
+//Stretch: Feature A Total Visits, increment from accessing GET "/urls/:id" and GET "/u/:id"
+const totalVisits = function(urlVisits, shortUrl) {
+  let totalVisiters = 0;
+  for (const visits in urlVisits) {
+    if (urlVisits[visits]['shortUrl'] === shortUrl) {
+      totalVisiters ++;
+    }
+  }
+  return totalVisiters;
+};
+
+//Stretch: Feature B Unique Viewers this will increment from accessing GET "/urls/:id" and GET "/u/:id"
+const cookieViews = function(req, urlDatabase, urlVisits) {
+  let uniqueVisitors = {};
+  let counter = 0;
+  let longLink = urlDatabase[req.params.id]['longURL'];
+  for (const visits in urlVisits) {
+    if (urlVisits[visits]['longURL'] === longLink && uniqueVisitors[urlVisits[visits]['userID']] === undefined) {
+      uniqueVisitors[urlVisits[visits]['userID']] = 1;
+      counter ++;
+    }
+  }
+  return counter;
+};
+
+// STRETCH: Feature C History of User visits to shortURL
+const urlHistory = function(req, urlVisits) {
+  let visitHistory = {};
+  for (const visits in urlVisits) {
+    if (urlVisits[visits]['shortUrl'] === req.params.id) {
+      visitHistory[visits] = urlVisits[visits]['time'];
+    }
+  }
+  return visitHistory;
+};
+
+
 module.exports = {
   getUserByEmail,
   urlsForUser,
   appSecurity,
   generateRandomString,
   writeToFileDatabase,
-  writeToUsersDatabase
+  writeToUsersDatabase,
+  totalVisits,
+  urlHistory,
+  cookieViews
 };

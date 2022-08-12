@@ -13,7 +13,10 @@ let {
   appSecurity,
   generateRandomString,
   writeToFileDatabase,
-  writeToUsersDatabase
+  writeToUsersDatabase,
+  totalVisits, // Stretch Feature A
+  urlHistory, // Stretch Feature C
+  cookieViews // Stretch Feature B
 } = require('./helpers');
 
 // Starting the server and initializing the PORT
@@ -181,14 +184,13 @@ app.delete("/urls/:id", (req, res) => {
 });
 
 // STRETCH: Need to add the following features: Unique visitors, Total Visitors, Visits {Timestamp, trackingID}
-// Clicking on a URL adds to a Vistor_object {trkID:{userID, time,url}, trkID:{userID,time, url}}
-// Feature A) Total clicks, for (urls in Visitor_object) if (urls === short_url) counter ++
-// Feature B) unique visitors will return a counted result from looping through
-// Object for unique visitors to a short URL (urls in Visitor_object) if (urls === short_url) a.push(userID)
-// for loop through the users array to check and then increment counter if unique.
-// Feature C) scan through urlVisits Database and display User's visits
+// Feature 0) Clicking on a URL adds to a Vistor_object {trkID:{userID, time,url}, trkID:{userID,time, url}}
+// Feature A) Total views from accessing either the GET /u/:id or GET /urls/:id pages
+// Feature B) Count Unique Viewers that access the url or edit page GET /u/:id or GET /urls/:id
+// Feature B) Also assign a cookie to track an unregistered user who accesses /u/id
+// Feature C) Scan through urlVisits Database and display User's visits HISTORY
 
-// STRETCH: url visit history Object/Database
+// STRETCH: Feature 0) Url visit history Object/Database
 let urlVisits = {
   lPiGRA: {
     userID: 'BaZg4f',
@@ -198,43 +200,6 @@ let urlVisits = {
   }
 };
 
-//Stretch: Feature A Total Visits, increment from accessing GET "/urls/:id" and GET "/u/:id"
-const totalVisits = function(urlVisits, shortUrl) {
-  let totalVisiters = 0;
-  for (const visits in urlVisits) {
-    if (urlVisits[visits]['shortUrl'] === shortUrl) {
-      totalVisiters ++;
-    }
-  }
-  return totalVisiters;
-};
-
-//Stretch: Feature B Unique Viewers this will increment from accessing GET "/urls/:id" and GET "/u/:id"
-const cookieViews = function(req, urlDatabase, urlVisits) {
-  let uniqueVisitors = {};
-  let counter = 0;
-  let longLink = urlDatabase[req.params.id]['longURL'];
-  for (const visits in urlVisits) {
-    if (urlVisits[visits]['longURL'] === longLink && uniqueVisitors[urlVisits[visits]['userID']] === undefined) {
-      uniqueVisitors[urlVisits[visits]['userID']] = 1;
-      counter ++;
-    }
-  }
-  return counter;
-};
-
-// STRETCH: Feature C History of User visits to shortURL
-const urlHistory = function(req, urlVisits) {
-  let visitHistory = {};
-  for (const visits in urlVisits) {
-    if (urlVisits[visits]['shortUrl'] === req.params.id) {
-      visitHistory[visits] = urlVisits[visits]['time'];
-    }
-  }
-  return visitHistory;
-};
-
-
 app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
   appSecurity(req, users, (userID) => {
     if (urlDatabase[req.params.id] === undefined) {
@@ -243,13 +208,14 @@ app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
       res.send('<html><body><a href="/urls"">This short URL does not belong to you</a></body></html>\n');
     } else {
       let trackingID = generateRandomString();
-      //STRETCH: This adds to the urlVisits Database
+      //STRETCH: This adds to the urlVisits Database//
       urlVisits[trackingID] = {
         userID: userID,
         time: Date.now(),
         shortUrl: req.params.id,
         longURL: urlDatabase[req.params.id]['longURL']
       };
+      // Stretch END//
       const templateVars = {
         id: req.params.id,
         longURL: urlsForUser(userID, urlDatabase)[req.params.id],
