@@ -314,7 +314,7 @@ app.get("/u/:id", (req, res) => { // Tracks if users visits website
       longURL: urlDatabase[req.params.id]['longURL']
     };
     //////// Stretch ////////////
-    
+
     res.redirect(302, urlObject.longURL);
   }
 });
@@ -333,6 +333,7 @@ app.post("/login", (req, res) => {
     req.session.userid = userID;
   }
   appSecurity(req, users, () => {
+    res.clearCookie('Random_User');
     res.redirect(302, "/urls");
   }, () => {
     res.redirect(302, "login");
