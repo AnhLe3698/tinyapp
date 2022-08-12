@@ -1,9 +1,9 @@
 // Adding our dependencies
 const express = require('express'); // HTTP request library
 const cookieSession = require('cookie-session'); // Encrypted cookies
+const cookiesState = require('cookie-parser'); // Used for Statefulness
 const bcrypt = require('bcryptjs'); // Hashed Passwords
 const methodOverride = require('method-override'); // "Adds" PUT and Delete requests
-const cookiesState = require('cookie-parser');
 const fs = require('fs'); // Reading Database from files
 
 //Imported HELPER functions;
@@ -22,13 +22,14 @@ const PORT = 8080; // default port 8080
 
 //Middleware
 app.set("view engine", "ejs"); // Serverside Rendering
+app.use(cookiesState()); // Helps with statefulness
 app.use(express.urlencoded({ extended: true })); // UTF8 encoding
 app.use(methodOverride('_method')); // override with POST and ?_method=DELETE in form
 app.use(cookieSession({ // Session Security
   name: 'session',
   keys: ['COOKIEMONSTER'],
 }));
-app.use(cookiesState); // Helps with statefulness
+
 
 //Listener
 app.listen(PORT, () => {
@@ -179,14 +180,16 @@ app.delete("/urls/:id", (req, res) => {
   writeToFileDatabase(urlDatabase); //updating the save file with all our urls
 });
 
-// Need to add the following features: Unique visitors, Total Visitors, Visits {Timestamp, trackingID}
+// STRETCH: Need to add the following features: Unique visitors, Total Visitors, Visits {Timestamp, trackingID}
 // Clicking on a URL adds to a Vistor_object {trkID:{userID, time,url}, trkID:{userID,time, url}}
 // Feature A) Total clicks, for (urls in Visitor_object) if (urls === short_url) counter ++
 // Feature B) unique visitors will return a counted result from looping through
 // Object for unique visitors to a short URL (urls in Visitor_object) if (urls === short_url) a.push(userID)
 // for loop through the users array to check and then increment counter if unique.
-// Feature C) scan through document and display User's visits
-let urlVists = {
+// Feature C) scan through urlVisits Database and display User's visits
+
+// STRETCH: url visit history Object/Database
+let urlVisits = {
   lPiGRA: {
     userID: 'BaZg4f',
     time: 1660268400,
@@ -195,17 +198,7 @@ let urlVists = {
   }
 };
 
-// Feature C History of User visits to shortURL
-const urlVisits = function(req, urlVisits) {
-  let visitHistory = {};
-  for (const visits in urlVisits) {
-    if (urlVisits[visits]['shortUrl'] === req.params.id) {
-      visitHistory[visits] = urlVisits[visits]['time'];
-    }
-  }
-};
-
-// Feature A total visits
+//Stretch: Feature A Total Visits, increment from accessing GET "/urls/:id" and GET "/u/:id"
 const totalVisits = function(urlVisits, shortUrl) {
   let totalVisiters = 0;
   for (const visits in urlVisits) {
@@ -216,19 +209,31 @@ const totalVisits = function(urlVisits, shortUrl) {
   return totalVisiters;
 };
 
-// Feature B Unique Viewers
+//Stretch: Feature B Unique Viewers this will increment from accessing GET "/urls/:id" and GET "/u/:id"
 const cookieViews = function(req, urlDatabase, urlVisits) {
   let uniqueVisitors = {};
   let counter = 0;
-  let longLink = urlDatabase[req.params.id].longURL;
+  let longLink = urlDatabase[req.params.id]['longURL'];
   for (const visits in urlVisits) {
-    if (urlVisits[visits].longURL === longLink && uniqueVisitors[urlVisits[visits]['userID']] !== undefined) {
+    if (urlVisits[visits]['longURL'] === longLink && uniqueVisitors[urlVisits[visits]['userID']] === undefined) {
       uniqueVisitors[urlVisits[visits]['userID']] = 1;
       counter ++;
     }
   }
   return counter;
 };
+
+// STRETCH: Feature C History of User visits to shortURL
+const urlHistory = function(req, urlVisits) {
+  let visitHistory = {};
+  for (const visits in urlVisits) {
+    if (urlVisits[visits]['shortUrl'] === req.params.id) {
+      visitHistory[visits] = urlVisits[visits]['time'];
+    }
+  }
+  return visitHistory;
+};
+
 
 app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
   appSecurity(req, users, (userID) => {
@@ -238,16 +243,20 @@ app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
       res.send('<html><body><a href="/urls"">This short URL does not belong to you</a></body></html>\n');
     } else {
       let trackingID = generateRandomString();
-      // This adds to the urlVisits Database
-      urlVists[trackingID] = {
+      //STRETCH: This adds to the urlVisits Database
+      urlVisits[trackingID] = {
         userID: userID,
         time: Date.now(),
-        shortUrl: req.params.id
+        shortUrl: req.params.id,
+        longURL: urlDatabase[req.params.id]['longURL']
       };
       const templateVars = {
         id: req.params.id,
         longURL: urlsForUser(userID, urlDatabase)[req.params.id],
-        userID: users[userID]
+        userID: users[userID],
+        totalViews: totalVisits(urlVisits, req.params.id), // Stretch: Feature A
+        uniqueViews: cookieViews(req, urlDatabase, urlVisits), // Stretch: Feature B
+        history: urlHistory(req, urlVisits) // Stretch: Feature C
       };
       res.render("urls_show", templateVars);
     }
@@ -268,8 +277,7 @@ app.post("/urls", (req, res) => {
       userID
     };
     urlDatabase[shortString] = urlObject;
-    
-    writeToFileDatabase(urlDatabase); // Writing to database
+    writeToFileDatabase(urlDatabase); // Writing Urls to database
     res.redirect(302, `/urls/${shortString}`);
   }, () => {
     res.send('<html><body><a href="/login">Please login/register to access this page</a></body></html>\n');
@@ -277,11 +285,36 @@ app.post("/urls", (req, res) => {
 });
 
 // Redirects to external websites using the longURL
-app.get("/u/:id", (req, res) => {
+// Stretch: Accessing a link or accessing the Edit page ("/urls/:id")
+// records a session that the short url and the long url was accessed!
+app.get("/u/:id", (req, res) => { // Tracks if users visits website
   const urlObject = urlDatabase[req.params.id];
   if (urlObject === undefined) {
     res.send("<html><body>The short url is not a valid ID</body></html>\n");
   } else {
+    
+
+    ////// Stetch /////////////
+    // The following lines of code tracks logged in users and random users
+    // who access a short url and adds it to the urlVisits object/database
+    let trackingID = generateRandomString();
+    let userID = "";
+    if (req.session.userid !== undefined) {
+      userID = req.session.userid;
+    } else if (req.session.userid === undefined && req.cookies['Random_User'] === undefined) {
+      userID = generateRandomString();
+      res.cookie('Random_User', userID);
+    } else if (req.cookies['Random_User'] !== undefined) {
+      userID = req.cookies['Random_User'];
+    }
+    urlVisits[trackingID] = {
+      userID: userID,
+      time: Date.now(),
+      shortUrl: req.params.id,
+      longURL: urlDatabase[req.params.id]['longURL']
+    };
+    //////// Stretch ////////////
+    
     res.redirect(302, urlObject.longURL);
   }
 });

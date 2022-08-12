@@ -14,7 +14,7 @@
     <%- include('partials/_header') %>
     <div class="card text-center">
       <div class="card-header"></div>
-      <div class="card-body">
+      <div class="card-body" id="childAppend">
         <h5 class="card-title">TinyURL for: <%= longURL %></h5>
         <p class="card-text">
           Short URL ID: <a href="/u/<%= id %>"><%= id %></a>
@@ -38,6 +38,15 @@
       </div>
       <div class="card-footer text-muted"></div>
     </div>
+    <!--Stretch Activities-->
+    <div>TOTAL VIEWS FOR THIS SHORT URL: <%= totalViews %></div>
+    <div>TOTAL UNIQUE VIEWS(different users) FOR LONG URL <%= uniqueViews %></div>
+    <div>___________________________________________________</div>
+    <div>History of when you visited this shortURL</div>
+    <% for (let views in history) { %>
+      <div>Tracking ID: <%= views %>, UNIX Time <%= history[views] %></div>
+    <% } %>
+    
     <!-- Bootstrap JS -->
     <script
       src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
