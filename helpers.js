@@ -13,7 +13,7 @@ const getUserByEmail = function(userEmail, users) {
 const writeToFileDatabase = function(urls) {
   let urlDatabaseJSON = JSON.stringify(urls);
   // Saving the new urlDatabase object into the text file
-  fs.writeFile('./savedUrls.txt', urlDatabaseJSON, err => {
+  fs.writeFile('./database/savedUrls.txt', urlDatabaseJSON, err => {
     if (err) {
       console.error(err);
     }
@@ -24,7 +24,7 @@ const writeToFileDatabase = function(urls) {
 const writeToUsersDatabase = function(users) {
   let urlDatabaseJSON = JSON.stringify(users);
   // Saving the new urlDatabase object into the text file
-  fs.writeFile('./savedUsers.txt', urlDatabaseJSON, err => {
+  fs.writeFile('./database/savedUsers.txt', urlDatabaseJSON, err => {
     if (err) {
       console.error(err);
     }
@@ -128,10 +128,9 @@ const timeConverter = function(unixTime) {
   let hour = a.getHours();
   let min = a.getMinutes();
   let sec = a.getSeconds();
-  let time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+  let time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec;
   return time;
 };
-
 
 module.exports = {
   getUserByEmail,

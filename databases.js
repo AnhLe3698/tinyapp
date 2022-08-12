@@ -6,7 +6,7 @@ let _urlDatabase = {};
 
 //Initialzing URL Database Part 2
 //We need to read our urls from our Url database saved in a text file
-let data = fs.readFileSync('./savedUrls.txt', 'utf8', (err) => {
+let data = fs.readFileSync('./database/savedUrls.txt', 'utf8', (err) => {
   if (err) {
     console.error(err);
     return;
@@ -21,7 +21,7 @@ if (data.length !== 0) { // Checks if there is no data
 let _users = {};
 
 // Initialzing User Database Part 2
-let data1 = fs.readFileSync('./savedUsers.txt', 'utf8', (err) => {
+let data1 = fs.readFileSync('./database/savedUsers.txt', 'utf8', (err) => {
   if (err) {
     console.error(err);
     return;
@@ -69,6 +69,7 @@ _users['tJ45ls'] = {
 
 // STRETCH: Feature 0) Url visit history Object/Database
 let _urlVisits = {
+  // FORMAT EXAMPLE
   // lPiGRA: {
   //   userID: 'BaZg4f',
   //   time: 1660268400,
@@ -83,7 +84,10 @@ let errorMessages = {
   pleaseLogin: '<html><body><a href="/login">Please login/register to access this page</a></body></html>\n',
   invalidURL: "<html><body>The short url is not a valid ID</body></html>\n",
   invalidURL2: '<html><body><a href="/urls">URL does not exist</a></body></html>\n',
-  loginForAccess: 'Please login/register to access the page'
+  loginForAccess: 'Please login/register to access the page',
+  duplicateEmail: '<html><body><a href="/register">This email is already registered</a></body></html>\n',
+  emptyFields: '<html><body><a href="/register">Missing Field: email/password</a></body></html>\n',
+  invalidInformation: '<html><body><a href="/login">Invalid Login Information, please try again</a></body></html>\n',
 };
 
 module.exports = {

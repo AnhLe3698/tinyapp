@@ -43,7 +43,7 @@ app.use(cookieSession({ // Session Security
 
 //Listener
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}`);
+  console.log(`TinyApp listening on PORT: ${PORT}`);
 });
 
 // Initialzing URL Database read from file
@@ -82,7 +82,7 @@ app.get("/urls", (req, res) => {
   });
 });
 
-// creates new links, POST method creates new resource
+// Creates new links, POST method creates new resource
 app.post("/urls", (req, res) => {
   appSecurity(req, users, (userID) => {
     // generating url ID
@@ -130,6 +130,7 @@ app.put("/urls/:id/edit", (req, res) => {
 });
 
 // Adding Method Overide to allow for Delete requests
+// We no longer use POST /urls/:id/delete
 app.delete("/urls/:id", (req, res) => {
   appSecurity(req, users, () => {
     if (urlDatabase[req.params.id]) {
@@ -145,7 +146,8 @@ app.delete("/urls/:id", (req, res) => {
   writeToFileDatabase(urlDatabase);
 });
 
-app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
+// Directs to the EDIT page
+app.get("/urls/:id", (req, res) => {
   appSecurity(req, users, (userID) => {
     if (urlDatabase[req.params.id] === undefined) {
       res.send('Invalid short url');
@@ -176,8 +178,6 @@ app.get("/urls/:id", (req, res) => { // EDIT PAGE REDIRECT
     res.send(errorMessages['pleaseLogin']);
   });
 });
-
-
 
 // Redirects to external websites using the longURL
 app.get("/u/:id", (req, res) => { // Tracks if users visits website
@@ -226,7 +226,7 @@ app.post("/login", (req, res) => {
     res.clearCookie('Random_User');
     res.redirect(302, "/urls");
   }, () => {
-    res.redirect(302, "login");
+    res.send(errorMessages['invalidInformation']);
   });
 });
 
@@ -249,8 +249,12 @@ app.post("/register", (req,res) => {
   // The following variable will check if an email exists
   // If getUserByEmail cannot locate email, it will return undefined
   let checkDuplicateEmail = getUserByEmail(req.body.email, users);
-  if (req.body.email !== undefined && req.body.email !== "" && checkDuplicateEmail === undefined
-  && req.body.password !== undefined && req.body.password !== "") {
+  if (req.body.email === undefined || req.body.email === "" ||
+  req.body.password === undefined || req.body.password === "") {
+    res.send(errorMessages['emptyFields']);
+  } else if (checkDuplicateEmail !== undefined) {
+    res.send(errorMessages['duplicateEmail']);
+  } else {
     let userID = generateRandomString(); // UserID
     let newUser = { // User settings
       id: userID,
@@ -261,7 +265,5 @@ app.post("/register", (req,res) => {
     req.session.userid = userID;
     writeToUsersDatabase(users); // adds account to user database
     res.redirect(302, "/urls");
-  } else {
-    res.redirect(400, "/register");
   }
 });
